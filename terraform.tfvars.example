@@ -2,8 +2,6 @@
 # cp terraform.tfvars.example terraform.tfvars
 
 project_id             = "your-gcp-project-id"
-region                 = "us-central1"
-zone                   = "us-central1-a"
-ssh_pub_key_path       = "~/.ssh/id_rsa.pub"
-allowed_ssh_cidrs      = ["YOUR.IP.ADDRESS/32"]
+grafana_admin_user     = "your-username"
 grafana_admin_password = "your-secure-password-here"
+tailscale_auth_key     = "tskey-auth-xxxxx" # https://login.tailscale.com/admin/settings/keys

@@ -18,30 +18,23 @@ variable "zone" {
 variable "instance_name" {
   description = "Name of the GCE instance"
   type        = string
-  default     = "cc-team-dashboard"
+  default     = "cc-analyzer"
 }
 
-variable "ssh_user" {
-  description = "SSH username for the instance"
+variable "grafana_admin_user" {
+  description = "Grafana admin username"
   type        = string
-  default     = "ubuntu"
-}
-
-variable "ssh_pub_key_path" {
-  description = "Path to SSH public key file"
-  type        = string
-  default     = "~/.ssh/id_rsa.pub"
-}
-
-variable "allowed_ssh_cidrs" {
-  description = "CIDR blocks allowed for SSH access"
-  type        = list(string)
-  default     = ["0.0.0.0/0"] # 本番では自分のIPに制限すること
+  default     = "admin"
 }
 
 variable "grafana_admin_password" {
-  description = "Grafana admin password (change from default)"
+  description = "Grafana admin password"
   type        = string
   sensitive   = true
-  default     = "changeme-please"
+}
+
+variable "tailscale_auth_key" {
+  description = "Tailscale auth key (generate at https://login.tailscale.com/admin/settings/keys)"
+  type        = string
+  sensitive   = true
 }

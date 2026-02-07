@@ -2,6 +2,8 @@
 resource "google_compute_address" "dashboard" {
   name   = "${var.instance_name}-ip"
   region = var.region
+
+  depends_on = [google_project_service.compute]
 }
 
 # GCE instance (e2-micro = Always Free tier)
@@ -10,7 +12,7 @@ resource "google_compute_instance" "dashboard" {
   machine_type = "e2-micro"
   zone         = var.zone
 
-  tags = ["cc-dashboard"]
+  tags = ["cc-analyzer"]
 
   boot_disk {
     initialize_params {
@@ -27,12 +29,15 @@ resource "google_compute_instance" "dashboard" {
     }
   }
 
-  metadata = {
-    ssh-keys = "${var.ssh_user}:${file(var.ssh_pub_key_path)}"
-  }
-
   metadata_startup_script = templatefile("${path.module}/startup.sh", {
+    grafana_admin_user     = var.grafana_admin_user
     grafana_admin_password = var.grafana_admin_password
+    tailscale_auth_key     = var.tailscale_auth_key
+    docker_compose         = file("${path.module}/docker-compose.yml")
+    otel_collector_config  = file("${path.module}/otel-collector-config.yaml")
+    grafana_datasources    = file("${path.module}/grafana/provisioning/datasources/datasources.yml")
+    grafana_dashboards     = file("${path.module}/grafana/provisioning/dashboards/dashboards.yml")
+    grafana_team_dashboard = file("${path.module}/grafana/provisioning/dashboards/team-dashboard.json")
   })
 
   # Prevent Ops Agent (not needed, saves resources)

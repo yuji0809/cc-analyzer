@@ -45,11 +45,11 @@
 │    - スキルファイル読み込み                            │            │
 └─────│────────────────────────────────────────────────│────────────┘
       │ gRPC (OTLP)                                   │ HTTP POST
-      │                                               │
+      │ via Tailscale VPN (100.x.x.x)                 │
       ▼                                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                 GCE e2-micro (us-central1)                       │
-│                 GCP Always Free 枠                               │
+│                 GCP Always Free 枠 + Tailscale VPN               │
 │                                                                 │
 │  ┌──────────────────┐     ┌────────────────────┐                │
 │  │  OTEL Collector   │     │  VictoriaMetrics    │                │
@@ -70,9 +70,11 @@
 │  └──────────────────┘     └────────────────────┘                │
 │                                    ▲                            │
 │                                    │ ブラウザアクセス             │
+│                                    │ (Tailscale VPN経由のみ)     │
 └────────────────────────────────────│────────────────────────────┘
-                                     │
+                                     │ Tailscale VPN
                               メンバーがブラウザで閲覧
+                              (Tailscale接続必須)
 ```
 
 ### 2.2 データの流れ（詳細）
@@ -329,7 +331,21 @@ Claude Codeの `/insights` コマンドが出力する直近1ヶ月のサマリ�
 - Standard Persistent Disk のみ（Balanced/SSD はNG）
 - ネットワーク下り: 1GB/月（北米宛）
 
-### 5.2 メモリ配分
+### 5.2 GCE を選定した理由
+
+Cloud Run や GKE ではなく GCE を採用した理由は以下の通り。
+
+| 観点 | GCE (採用) | Cloud Run (不採用) |
+|------|-----------|-------------------|
+| ステート | VictoriaMetrics/Logs がディスクにデータを永続化。ボリュームマウントが必須 | ステートレス前提。コンテナ再起動でデータ消失 |
+| 常時起動 | OTEL Collector が gRPC (4317) でテレメトリを常時受け付ける必要がある | リクエストがないとスケールゼロ。常時待ち受けに不向き |
+| 複数コンテナ | Docker Compose で 4 サービスが localhost で通信 | サービスごとに別デプロイ。ネットワーク設定が複雑化 |
+| Tailscale | デーモンが常駐して VPN トンネルを維持 | エフェメラルなコンテナでは VPN 維持が不可能 |
+| コスト | e2-micro は Always Free 枠で $0/月 | 4 サービスを 24/7 稼働させると課金発生 |
+
+要約すると、**常時起動 + ステートフル + 複数コンテナ連携 + VPN = GCE が最適**という判断。
+
+### 5.3 メモリ配分
 
 e2-micro の 1GB RAM で 4 コンテナを動かすためのメモリ計画。
 
@@ -345,23 +361,46 @@ e2-micro の 1GB RAM で 4 コンテナを動かすためのメモリ計画。
 
 startup.sh で 1-2GB の swapfile を作成し、ピーク時のOOMを防止する。
 
-### 5.3 セキュリティ（お試しフェーズ）
+### 5.4 セキュリティ
 
-本格運用ではなくお試しフェーズのため、最低限の対策のみ実施。
+Tailscale VPN によるゼロトラストネットワークを採用。インターネットへのポート公開を排除した。
 
 | 対策 | 内容 |
 |------|------|
-| Grafana認証 | 初回ログイン時にデフォルトパスワード (admin/admin) を変更 |
-| SSH制限 | GCPファイアウォールで :22 をYujiのIPのみに制限 |
-| :4317 / :3000 | 全開放（攻撃リスクは極めて低い） |
+| ネットワーク | Tailscale VPN 経由のみ。Grafana(:3000)、OTEL(:4317) はインターネットに非公開 |
+| Grafana認証 | Terraform で設定したパスワードによるログイン |
+| SSH | GCPファイアウォールで管理者IPのみ許可（初期セットアップ用）。Tailscale 経由の SSH も利用可能 |
+| 暗号化 | Tailscale は WireGuard ベース。全通信がエンドツーエンドで暗号化される |
+| アクセス制御 | Tailnet に参加したデバイスのみアクセス可能。Tailscale Admin Console でデバイス管理 |
 
-**本格運用移行時の追加対策（将来）:**
+**Tailscale の役割 — ファイアウォール + VPN + DNS を兼務:**
 
-- Tailscale（無料枠100台）によるプライベートネットワーク化
-- OTEL Collector へのBearerトークン認証追加
-- 全ポートをTailscale内に閉じる
+通常、GCE でサービスを公開する場合はファイアウォールルール（ポート開放、IP制限）、HTTPS化（証明書管理）、アプリケーション層の認証強化が必要になる。本構成では Tailscale がこれらを全て代替している。
 
-### 5.4 ディスク管理
+```
+通常の構成:
+  ブラウザ → インターネット → GCE公開IP:3000 → Grafana
+                                ↑
+                     ファイアウォールで制御が必要
+                     (IP制限、認証、HTTPS化...)
+
+本構成 (Tailscale経由):
+  ブラウザ → Tailscale暗号化トンネル → GCEのTailscale IP:3000 → Grafana
+             (同じTailnetのメンバーだけ)
+```
+
+これにより `firewall.tf` にルールを一切書く必要がなく、GCE のパブリック IP にはどのポートも公開していない。
+
+**Tailscale を採用した理由:**
+
+- ポート公開が不要になり、OTEL/Grafana への不正アクセスリスクがゼロ
+- WireGuard ベースで HTTP 通信も VPN トンネル内で暗号化される
+- MagicDNS により `cc-analyzer` のホスト名でアクセス可能（IP を覚える必要がない）
+- 無料枠100台で小規模チームには十分
+- インストールが簡単（各メンバーは `tailscale up` するだけ）
+- GCE インスタンス側も startup script で自動セットアップ
+
+### 5.5 ディスク管理
 
 | データ | 保持期間 | 推定サイズ（5人・保持期間分） |
 |-------|---------|------------------------|
@@ -389,7 +428,7 @@ export CLAUDE_CODE_ENABLE_TELEMETRY=1
 export OTEL_METRICS_EXPORTER=otlp
 export OTEL_LOGS_EXPORTER=otlp
 export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://<GCE_STATIC_IP>:4317
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://cc-analyzer:4317
 
 # ツール詳細ログの有効化（MCP名・スキル名を取得するために必須）
 export OTEL_LOG_TOOL_DETAILS=1
@@ -415,7 +454,7 @@ source ~/.zshrc
 
 **ダッシュボードの確認:**
 
-1. ブラウザで `http://<GCE_STATIC_IP>:3000` を開く
+1. ブラウザで `http://cc-analyzer:3000` を開く（Tailscale接続必須）
 2. Grafanaにログイン
 3. 「Claude Code Team Dashboard」を開く
 4. 期間・メンバーをフィルターで切り替えて閲覧
@@ -621,11 +660,11 @@ claude-code-team-dashboard/
 |-------|-----------|
 | Prometheus | メモリスパイクがe2-microでOOMリスク、Pushgateway別途必要 |
 | Grafana Loki | 最低6-7GB RAM必要、e2-microでは動作不可能 |
-| Cloud Run | ステートフルサービス（DB）と相性が悪い、常時起動コスト |
+| Cloud Run | ステートレス前提でデータ永続化不可、スケールゼロで常時受信不可、4サービスの localhost 連携不可、Tailscale デーモン維持不可、24/7 稼働で課金発生（詳細は 5.2 節） |
 | GKE | 5人チームのダッシュボードにはオーバースペック |
 | SigNoz / Uptrace | フルスタックAPMだがe2-microには重すぎる |
 | Datadog | 有料、5人チームにはオーバースペック |
 | Astro/Next.js ビューワー | Grafanaで十分、別アプリの管理コストが増える |
 | ccusage CLI | 個人用ツール、チーム集約機能がない |
 | 自宅Raspberry Pi サーバー | チームアクセスのネットワーク設定が複雑 |
-| Tailscale（お試しフェーズ） | 本格運用時に導入で十分、全員インストールの手間 |
+| 公開HTTPでのポート全開放 | セキュリティリスクが高く、Tailscale VPN を採用して解消 |
