@@ -1,0 +1,119 @@
+---
+name: documentation-check
+description: "cc-analyzer プロジェクトのドキュメントとインフラコードの整合性チェック"
+tags: ["documentation", "terraform", "consistency"]
+---
+
+# ドキュメントチェック スキル
+
+## このプロジェクトのドキュメント構成
+
+```
+cc-analyzer/
+  ├── README.md        # セットアップ手順・運用ガイド（メンバー向け）
+  ├── DESIGN.md        # 設計書・アーキテクチャ詳細（開発者向け）
+  └── terraform.tfvars.example  # Terraform 設定例
+```
+
+## ドキュメント更新が必要になるタイミング
+
+### Terraform 変更時
+
+| 変更内容 | 更新先 |
+|---------|--------|
+| variables.tf に変数追加 | terraform.tfvars.example, DESIGN.md |
+| outputs.tf の環境変数変更 | README.md, DESIGN.md |
+| gce.tf のマシンタイプ・リージョン変更 | DESIGN.md (Section 5) |
+| firewall.tf にルール追加 | DESIGN.md (Section 5.4) |
+
+### Docker / サービス変更時
+
+| 変更内容 | 更新先 |
+|---------|--------|
+| docker-compose.yml にサービス追加 | DESIGN.md (アーキテクチャ図, コンポーネント表, メモリ配分) |
+| docker-compose.yml のポート変更 | DESIGN.md, outputs.tf, README.md |
+| otel-collector-config.yaml 変更 | DESIGN.md (Section 3.1) |
+| Grafana ダッシュボード追加 | gce.tf, startup.sh |
+
+### Grafana プロビジョニング変更時
+
+| 変更内容 | 更新先 |
+|---------|--------|
+| datasources.yml に DS 追加 | gce.tf, startup.sh, DESIGN.md |
+| ダッシュボード JSON 追加/変更 | gce.tf, startup.sh |
+| dashboards.yml のパス変更 | startup.sh |
+
+## 整合性チェック手順
+
+### Step 1: 変数の同期チェック
+
+variables.tf の全変数が以下に反映されているか確認：
+
+```bash
+# variables.tf の変数一覧
+grep 'variable "' variables.tf
+
+# terraform.tfvars.example の変数一覧
+grep -E '^\w' terraform.tfvars.example
+
+# gce.tf の templatefile 変数
+grep -A 20 'templatefile(' gce.tf
+```
+
+### Step 2: 環境変数の同期チェック
+
+3箇所の環境変数が一致しているか確認：
+
+```bash
+# outputs.tf
+grep 'export ' outputs.tf
+
+# README.md
+grep 'export ' README.md
+
+# DESIGN.md
+grep 'export ' DESIGN.md
+```
+
+### Step 3: ポート番号の一貫性チェック
+
+```bash
+# docker-compose.yml のポート
+grep -E '^\s+- "[0-9]+:[0-9]+"' docker-compose.yml
+
+# DESIGN.md のポート記載
+grep -E ':[0-9]{4}' DESIGN.md
+
+# otel-collector-config.yaml のエンドポイント
+grep 'endpoint' otel-collector-config.yaml
+```
+
+### Step 4: Grafana プロビジョニングチェック
+
+```bash
+# datasources.yml の uid
+grep 'uid:' grafana/provisioning/datasources/datasources.yml
+
+# ダッシュボード JSON の datasource uid 参照
+grep -o '"uid": "[^"]*"' grafana/provisioning/dashboards/team-dashboard.json | sort -u
+
+# startup.sh で書き出しているファイル
+grep 'cat >' startup.sh
+```
+
+### Step 5: DESIGN.md 構造チェック
+
+```bash
+# セクション番号の一覧（重複・飛びがないか目視確認）
+grep -E '^#{2,3} [0-9]' DESIGN.md
+```
+
+## コミット前チェックリスト
+
+- [ ] variables.tf を変更した → terraform.tfvars.example を確認
+- [ ] outputs.tf の環境変数を変更した → README.md と DESIGN.md を確認
+- [ ] docker-compose.yml を変更した → DESIGN.md のアーキテクチャ図とメモリ配分を確認
+- [ ] 新しいファイルを追加した → gce.tf の templatefile と startup.sh を確認
+- [ ] ポート番号を変更した → docker-compose.yml, DESIGN.md, outputs.tf を確認
+- [ ] Grafana プロビジョニングを変更した → datasource uid の整合性を確認
+- [ ] DESIGN.md を編集した → セクション番号の連番を確認

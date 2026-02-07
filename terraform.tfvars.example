@@ -5,3 +5,8 @@ project_id             = "your-gcp-project-id"
 grafana_admin_user     = "your-username"
 grafana_admin_password = "your-secure-password-here"
 tailscale_auth_key     = "tskey-auth-xxxxx" # https://login.tailscale.com/admin/settings/keys
+
+# Optional (uncomment to override defaults)
+# region             = "us-central1"       # default: "us-central1"
+# zone               = "us-central1-a"     # default: "us-central1-a"
+# instance_name      = "cc-analyzer"       # default: "cc-analyzer"

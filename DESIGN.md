@@ -369,7 +369,7 @@ Tailscale VPN によるゼロトラストネットワークを採用。インタ
 |------|------|
 | ネットワーク | Tailscale VPN 経由のみ。Grafana(:3000)、OTEL(:4317) はインターネットに非公開 |
 | Grafana認証 | Terraform で設定したパスワードによるログイン |
-| SSH | GCPファイアウォールで管理者IPのみ許可（初期セットアップ用）。Tailscale 経由の SSH も利用可能 |
+| SSH | Tailscale 経由の SSH でアクセス（GCPファイアウォールによるポート公開は不要） |
 | 暗号化 | Tailscale は WireGuard ベース。全通信がエンドツーエンドで暗号化される |
 | アクセス制御 | Tailnet に参加したデバイスのみアクセス可能。Tailscale Admin Console でデバイス管理 |
 
@@ -389,7 +389,7 @@ Tailscale VPN によるゼロトラストネットワークを採用。インタ
              (同じTailnetのメンバーだけ)
 ```
 
-これにより `firewall.tf` にルールを一切書く必要がなく、GCE のパブリック IP にはどのポートも公開していない。
+これにより GCE ファイアウォールルールは一切不要で、パブリック IP にはどのポートも公開していない。
 
 **Tailscale を採用した理由:**
 
@@ -504,32 +504,31 @@ source ~/.zshrc
 全てのGCPリソースをTerraformで管理する。
 
 ```
-terraform/
-  ├── main.tf          # provider設定、GCPプロジェクト
-  ├── variables.tf     # 変数定義（リージョン、プロジェクトID等）
-  ├── gce.tf           # GCE インスタンス定義
-  ├── firewall.tf      # ファイアウォールルール
-  ├── outputs.tf       # 出力値（静的IP、接続コマンド等）
-  ├── terraform.tfvars # 変数値（.gitignoreに追加）
-  └── startup.sh       # インスタンス起動時の自動セットアップ
+main.tf                # provider設定、GCPプロジェクト
+variables.tf           # 変数定義（リージョン、プロジェクトID等）
+gce.tf                 # GCE インスタンス定義
+outputs.tf             # 出力値（静的IP、接続コマンド等）
+terraform.tfvars       # 変数値（.gitignoreに追加）
+terraform.tfvars.example # 変数値のテンプレート
+startup.sh             # インスタンス起動時の自動セットアップ
 ```
+
+> **Note:** Tailscale VPN の採用により `firewall.tf` は不要（5.4 節参照）。
 
 ### 8.2 Docker Compose による全サービス管理
 
 GCEインスタンス上で Docker Compose により4つのコンテナを管理する。
 
 ```
-docker/
-  ├── docker-compose.yml         # 全コンテナ定義
-  ├── otel-collector-config.yaml # OTEL Collector設定
-  ├── victoria-metrics.yml       # VictoriaMetrics設定（必要に応じて）
-  └── grafana/
-      └── provisioning/
-          ├── datasources/
-          │   └── datasources.yml    # VictoriaMetrics/Logsを自動登録
-          └── dashboards/
-              ├── dashboards.yml     # ダッシュボードプロビジョニング設定
-              └── team-dashboard.json # ダッシュボードJSON（Gitで管理）
+docker-compose.yml               # 全コンテナ定義
+otel-collector-config.yaml       # OTEL Collector設定
+grafana/
+  └── provisioning/
+      ├── datasources/
+      │   └── datasources.yml    # VictoriaMetrics/Logsを自動登録
+      └── dashboards/
+          ├── dashboards.yml     # ダッシュボードプロビジョニング設定
+          └── team-dashboard.json # ダッシュボードJSON（Gitで管理）
 ```
 
 ### 8.3 Grafana ダッシュボードのバックアップ
@@ -543,31 +542,26 @@ Grafanaのダッシュボードは内部的にJSONで構成されている。GUI
 ## 9. リポジトリ構成
 
 ```
-claude-code-team-dashboard/
+cc-analyzer/
   ├── README.md                        # セットアップ手順
   ├── DESIGN.md                        # 本設計書
-  ├── terraform/
-  │   ├── main.tf
-  │   ├── variables.tf
-  │   ├── gce.tf
-  │   ├── firewall.tf
-  │   ├── outputs.tf
-  │   ├── terraform.tfvars             # (.gitignore)
-  │   └── startup.sh
-  ├── docker/
-  │   ├── docker-compose.yml
-  │   ├── otel-collector-config.yaml
-  │   └── grafana/
-  │       └── provisioning/
-  │           ├── datasources/
-  │           │   └── datasources.yml
-  │           └── dashboards/
-  │               ├── dashboards.yml
-  │               └── team-dashboard.json
-  ├── scripts/
-  │   ├── setup-member.sh.tpl          # メンバー環境変数セットアップ
-  │   ├── collect-insights.sh          # /insights収集スクリプト（将来フェーズ）
-  │   └── extract-metrics.js           # HTML→JSON変換（将来フェーズ）
+  ├── main.tf                          # provider設定、GCPプロジェクト
+  ├── variables.tf                     # 変数定義
+  ├── gce.tf                           # GCE インスタンス定義
+  ├── outputs.tf                       # 出力値（静的IP、接続コマンド等）
+  ├── terraform.tfvars                 # 変数値（.gitignore）
+  ├── terraform.tfvars.example         # 変数値のテンプレート
+  ├── startup.sh                       # インスタンス起動時の自動セットアップ
+  ├── docker-compose.yml               # 全コンテナ定義
+  ├── otel-collector-config.yaml       # OTEL Collector設定
+  ├── setup-member.sh                  # メンバー環境変数セットアップ
+  ├── grafana/
+  │   └── provisioning/
+  │       ├── datasources/
+  │       │   └── datasources.yml
+  │       └── dashboards/
+  │           ├── dashboards.yml
+  │           └── team-dashboard.json
   └── .gitignore
 ```
 
