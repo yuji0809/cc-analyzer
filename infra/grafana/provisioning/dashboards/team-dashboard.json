@@ -709,7 +709,7 @@
         "wrapLogMessage": true
       },
       "title": ".md ファイル読み込み",
-      "description": "Markdown ファイル（CLAUDE.md, README.md, カスタムコマンド等）の読み込みログのみ表示。ドキュメント活用度の追跡に使用。",
+      "description": "Markdown ファイル（CLAUDE.md, README.md, カスタムコマンド等）の読み込みログのみ表示。どの .md がいつ読まれるかを把握し、不要な記述の削除・必要な追記といったドキュメント最適化に活用。",
       "type": "logs",
       "targets": [
         {

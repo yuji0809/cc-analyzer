@@ -1,6 +1,6 @@
 # Claude Code Team Dashboard
 
-チームのClaude Code活用状況を可視化するダッシュボード。OpenTelemetryで収集したテレメトリをVictoriaMetrics + VictoriaLogs + Grafanaで可視化する。
+チームのClaude Code活用状況を可視化するダッシュボード。OpenTelemetryで収集したテレメトリをVictoriaMetrics + VictoriaLogs + Grafanaで可視化する。既存のテレメトリだけでは情報が不十分な項目は、Hooks（PreToolUse 等）で補足データを作成し、VictoriaLogs に送信して Grafana で同じダッシュボードから見られるようにしている。
 
 ## アーキテクチャ
 
@@ -16,6 +16,8 @@ GCE e2-micro (Always Free) + Tailscale (hostname: cc-analyzer)
 ```
 
 全ての通信は Tailscale VPN 経由。MagicDNS により `cc-analyzer` のホスト名でアクセスできる。
+
+**テレメトリ + Hooks:** 標準テレメトリ（OTLP）は OTEL Collector 経由で受信。テレメトリに含まれない情報（例: Read で読んだファイルパス）は Hooks スクリプトで取得し、VictoriaLogs の JSON Lines API に直接送信し、Grafana で可視化する。
 
 ## 前提条件
 
