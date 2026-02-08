@@ -4,35 +4,111 @@
 
 リアルタイムで自動収集されるデータ。メンバーは通常通り Claude Code を使うだけで蓄積される。
 
-### メトリクス（時系列グラフ）
+> **Note:** 「ユーザー別」のフィルター・グラフは、各メンバーが `setup-member.sh` を実行済みの場合のみ機能する。未実行のメンバーのデータは `user.name` 属性なしで記録され、User フィルターに表示されない。
 
-| カテゴリ | 指標 | フィルター | 可視化 |
-|---------|------|-----------|--------|
-| セッション | セッション数 | ユーザー別、プロジェクト別 | stat + 時系列バー |
-| 時間 | アクティブコーディング時間 | ユーザー別 | stat + 時系列バー |
-| コスト | API推定コスト (USD) | ユーザー別、モデル別 | stat + 時系列ライン |
-| トークン | トークン消費量 | タイプ別 (input / output / cacheRead / cacheCreation) | stat + 時系列ライン |
-| コード変更 | 追加行数 / 削除行数 | タイプ別 | 時系列バー |
-| Git | コミット数、PR数 | ユーザー別 | 時系列バー |
-| Edit/Write 判断 | Accept/Reject 率 | ツール別・言語別 | 時系列バー |
+### 1. 概要
 
-### ログ（イベントビューア）
+セッション数・合計コスト・合計トークン・アクティブ時間の4つの stat パネル。
 
-| カテゴリ | 見れる内容 | 条件 |
-|---------|-----------|------|
-| ツール実行 | どのツール (Edit, Bash, Read等) がいつ実行されたか、成功/失敗、所要時間 | - |
-| MCP呼び出し | どの MCP サーバー・ツールが使われたか | `OTEL_LOG_TOOL_DETAILS=1` |
-| スキル利用 | どのスキルが使われたか | `OTEL_LOG_TOOL_DETAILS=1` |
+**わかること:** チーム全体の Claude Code 活用度を一目で把握できる。「今週どれくらい使われたか」「コストは適正か」を瞬時に確認。
 
-### ダッシュボード化していないが取得できているデータ
+**分析例:**
+- 週次でコストの推移を追い、予算管理に活用
+- アクティブ時間とセッション数の比率で「1セッションあたりの平均作業時間」を推定
+- メンバー追加後の利用拡大トレンドを確認
 
-以下はテレメトリとして収集済みだが、まだ Grafana パネルを作成していないもの。必要に応じてパネルを追加できる。
+### 2. セッション & アクティビティ
 
-| データ | ソース | 備考 |
-|-------|--------|------|
-| API リクエスト詳細 | ログ: `claude_code.api_request` | モデル、レイテンシ、トークン数 |
-| API エラー | ログ: `claude_code.api_error` | エラー内容、ステータスコード |
-| プロンプト長 | ログ: `claude_code.user_prompt` | 文字数のみ（内容は `OTEL_LOG_USER_PROMPTS=1` で取得可） |
+ユーザー別のセッション数とアクティブ時間の時系列バーチャート。
+
+**わかること:** 誰がどれくらい Claude Code を使っているか。活用度の偏りや時間帯の傾向。
+
+**分析例:**
+- 特定メンバーの利用が少ない場合、オンボーディング支援やスキル改善の検討材料に
+- 曜日・時間帯のパターンから、チームのワークスタイルを把握
+- 新規メンバーの立ち上がり（利用開始〜定着）をトラッキング
+
+### 3. トークン & コスト
+
+タイプ別トークン使用量（input/output/cacheRead/cacheCreation）、ユーザー別コスト、モデル別コストの3パネル。
+
+**わかること:** トークンの消費内訳とコスト構造。どのモデルにいくらかかっているか。
+
+**分析例:**
+- `cacheRead` の割合が高いほどキャッシュが効いており、コスト効率が良い
+- `cacheCreation` が急増していたら、コンテキストの大幅な変更が頻発している可能性
+- モデル別コストで Opus vs Sonnet のコスト比率を把握し、モデル選択の最適化を検討
+- 特定ユーザーのコストが突出していたら、使い方のヒアリングや改善提案の材料に
+
+### 4. コード変更
+
+コード追加/削除行数、コミット & PR 数、Edit/Write の承認 vs 却下率、言語別判断の4パネル。
+
+**わかること:** Claude Code がどれだけコードを生成・変更しているか。ユーザーがその提案をどの程度受け入れているか。
+
+**分析例:**
+- 追加行数 vs 削除行数の比率で「新規開発 vs リファクタリング」の傾向を把握
+- Reject 率が高い場合、プロンプトの質やスキル設定の改善が必要なサイン
+- 言語別の Accept 率で、Claude Code が得意/不得意な言語を特定
+- コミット・PR 数の推移で開発アウトプットへの貢献度を測定
+
+### 5. API パフォーマンス
+
+API リクエストログと API エラーログの2パネル。
+
+**わかること:** 各 API リクエストの詳細（モデル、コスト、レスポンス時間、トークン数、キャッシュ利用状況）と、エラーの発生状況。
+
+**分析例:**
+- `duration_ms` が長いリクエストを特定し、パフォーマンスボトルネックを発見
+- `cache_read_tokens` / `input_tokens` でリクエスト単位のキャッシュヒット率を計算
+- API エラーの `status_code` で 429（レート制限）の頻度を確認し、使用ペースの調整を検討
+- `attempt` フィールドでリトライ回数が多いリクエストを特定し、API の安定性を評価
+
+### 6. ツール分析
+
+全ツール実行一覧、ツール失敗ログ、Bash コマンドログの3パネル。
+
+**わかること:** Claude Code がどのツールをどう使っているか。失敗パターンやBashで実行されたコマンドの詳細。
+
+**分析例:**
+- ツール失敗ログで頻発するエラーパターンを特定し、権限設定やスキルの改善に活用
+- Bash コマンドログで、実行されているコマンドの安全性を監査
+- ツール別の使用頻度から、チームの Claude Code 活用パターンを理解（Read 多め＝調査中心、Edit 多め＝実装中心）
+
+### 7. MCP・スキル・エージェント
+
+MCP サーバー呼び出し、スキル & コマンド、エージェント使用状況、カスタムツール一覧の4パネル。
+
+**わかること:** カスタム拡張機能（MCP サーバー、スキル、エージェント）の利用状況。
+
+**分析例:**
+- どの MCP サーバー・ツールが最も活用されているかを把握し、投資対効果を評価
+- カスタムスキル（/doc-check, /tf-check 等）の利用頻度で、チームへの浸透度を測定
+- エージェント（Task ツール）の使用頻度で、複雑なタスクの自動化度合いを把握
+- 利用されていないカスタムツールがあれば、廃止や改善を検討
+
+### 8. ツール許可判断ログ
+
+ツール実行の許可/拒否判断のログパネル。
+
+**わかること:** ユーザーがどのツールの実行を許可/拒否したか。判断の source（config/user_permanent/user_temporary 等）。
+
+**分析例:**
+- Reject が多いツールを特定し、`settings.json` の `permissions.allow` に追加して UX を改善
+- 意図しない拒否パターンがないか確認（フック設定の不備など）
+- チーム全体の権限設定の最適化材料に
+
+### 9. ユーザープロンプト
+
+ユーザーが入力したプロンプトの内容と長さのログパネル。
+
+**わかること:** ユーザーが Claude Code にどんなタスクを依頼しているかの実際の内容。
+
+**分析例:**
+- よく依頼されるタスクパターンを特定し、カスタムスキルやエージェントとして自動化
+- プロンプトの質を分析し、チーム向けのプロンプトガイドラインを作成
+- 「こういう使い方もできる」という好事例を発見し、チーム内で共有
+- プロンプト長の傾向から、タスクの複雑さの推移を把握
 
 ---
 
@@ -80,16 +156,18 @@
 
 Claude Code が OTEL メトリクスプロトコルで送信する全メトリクス。
 
-| OTEL メトリクス名 | Prometheus 名 | 単位 | 属性 |
-|------------------|--------------|------|------|
+| OTEL メトリクス名 | VictoriaMetrics での実際の名前 | 単位 | 属性 |
+|------------------|-------------------------------|------|------|
 | `claude_code.session.count` | `claude_code_session_count_total` | count | - |
-| `claude_code.active_time.total` | `claude_code_active_time_total_seconds_total` | seconds | - |
-| `claude_code.cost.usage` | `claude_code_cost_usage_total` | USD | `model` |
-| `claude_code.token.usage` | `claude_code_token_usage_total` | tokens | `type` (input/output/cacheRead/cacheCreation), `model` |
+| `claude_code.active_time.total` | `claude_code_active_time_seconds_total` | seconds | - |
+| `claude_code.cost.usage` | `claude_code_cost_usage_USD_total` | USD | `model` |
+| `claude_code.token.usage` | `claude_code_token_usage_tokens_total` | tokens | `type` (input/output/cacheRead/cacheCreation), `model` |
 | `claude_code.lines_of_code.count` | `claude_code_lines_of_code_count_total` | count | `type` (added/removed) |
 | `claude_code.commit.count` | `claude_code_commit_count_total` | count | - |
 | `claude_code.pull_request.count` | `claude_code_pull_request_count_total` | count | - |
 | `claude_code.code_edit_tool.decision` | `claude_code_code_edit_tool_decision_total` | count | `tool`, `decision` (accept/reject), `language` |
+
+> **Note:** OTEL → Prometheus 変換時に単位がメトリクス名に付加される（`tokens`, `USD`, `seconds`）。上記の名前は VictoriaMetrics API (`/api/v1/label/__name__/values`) で実際に確認済み。
 
 ### ログイベント一覧（5種類）
 
@@ -97,14 +175,26 @@ Claude Code が OTEL ログプロトコルで送信する全イベント。
 
 | イベント名 | 内容 | 主な属性 |
 |-----------|------|---------|
-| `claude_code.tool_result` | ツール実行結果 | `tool_name`, `success`, `duration_ms`, `tool_parameters`* |
-| `claude_code.user_prompt` | ユーザープロンプト | `prompt_length`, `prompt`** |
-| `claude_code.api_request` | API リクエスト | `model`, `cost_usd`, `duration_ms`, `input_tokens`, `output_tokens` |
-| `claude_code.api_error` | API エラー | `model`, `error`, `status_code` |
+| `claude_code.tool_result` | ツール実行結果 | `tool_name`, `success`, `duration_ms`, `tool_parameters`\*, `decision_source`, `decision_type` |
+| `claude_code.user_prompt` | ユーザープロンプト | `prompt_length`, `prompt`\*\* |
+| `claude_code.api_request` | API リクエスト | `model`, `cost_usd`, `duration_ms`, `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_creation_tokens` |
+| `claude_code.api_error` | API エラー | `model`, `error`, `status_code`, `duration_ms`, `attempt` |
 | `claude_code.tool_decision` | ツール許可判断 | `tool_name`, `decision`, `source` |
 
-\* `tool_parameters` は JSON 文字列。`OTEL_LOG_TOOL_DETAILS=1` 設定時に MCP サーバー名 (`mcp_server_name`)、スキル名 (`skill_name`) 等を含む。
-\*\* `prompt` は `OTEL_LOG_USER_PROMPTS=1` 設定時のみ含まれる。
+### tool_result の tool_name 値とパラメータ（ソースコード確認済み）
+
+`tool_name` はツール種類によってサニタイズされる。特に MCP ツールは実際のツール名ではなく `"mcp_tool"` に統一される。
+
+| ツール種類 | `tool_name` | `tool_parameters` | 備考 |
+|-----------|-------------|-------------------|------|
+| 組み込みツール (Edit, Read, Write, Glob 等) | そのまま (`"Edit"`, `"Read"` 等) | なし | |
+| Bash | `"Bash"` | `{"bash_command":"...", "full_command":"...", "description":"...", "sandbox":"..."}` | 常にあり |
+| MCP ツール | **`"mcp_tool"`** | `{"mcp_server_name":"...", "mcp_tool_name":"..."}` | `OTEL_LOG_TOOL_DETAILS=1` 時のみ。追加で `mcp_server_scope` がトップレベル属性として付与 |
+| スキル / カスタムコマンド | **`"Skill"`** | `{"skill_name":"doc-check"}` | `OTEL_LOG_TOOL_DETAILS=1` 時のみ |
+| エージェント (Task) | **`"Task"`** | なし (null) | subagent_type は取得不可（公式 issue #14784 で NOT_PLANNED） |
+
+\* `tool_parameters` は JSON 文字列。全ツールに存在するわけではなく、上記の Bash / MCP / Skill でのみ出現する。
+\*\* `prompt` は `OTEL_LOG_USER_PROMPTS=1` 設定時のみ含まれる（有効化済み）。
 
 ### 共通属性
 
@@ -113,6 +203,7 @@ Claude Code が OTEL ログプロトコルで送信する全イベント。
 | 属性 | 値 |
 |------|-----|
 | `service.name` | `claude-code` |
+| `service.version` | Claude Code バージョン（`OTEL_METRICS_INCLUDE_VERSION=true` で有効化済み） |
 | `os.type` | `darwin` / `linux` / `windows` |
 | `host.arch` | `amd64` / `arm64` |
 | `terminal.type` | `iTerm.app` / `vscode` / `cursor` 等 |

@@ -28,8 +28,10 @@ if [ -f "$LOCAL_SETTINGS" ]; then
   exit 0
 fi
 
-# Get user name
-read -rp "Enter your display name for the dashboard: " USER_NAME
+# Get user name (default to OS username)
+DEFAULT_NAME="${USER:-$(whoami)}"
+read -rp "Enter your display name for the dashboard [$DEFAULT_NAME]: " USER_NAME
+USER_NAME="${USER_NAME:-$DEFAULT_NAME}"
 
 if [ -z "$USER_NAME" ]; then
   echo "Error: Name cannot be empty."

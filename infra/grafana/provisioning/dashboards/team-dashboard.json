@@ -46,7 +46,7 @@
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 100,
-      "title": "Overview",
+      "title": "概要",
       "type": "row"
     },
     {
@@ -60,8 +60,8 @@
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "id": 1,
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Sessions",
-      "description": "Period total sessions",
+      "title": "セッション数",
+      "description": "期間内の合計セッション数",
       "type": "stat",
       "targets": [
         {
@@ -83,12 +83,12 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Total Cost",
-      "description": "Estimated API cost",
+      "title": "合計コスト",
+      "description": "API推定コスト",
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_cost_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "expr": "sum(increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
           "legendFormat": "cost",
           "refId": "A"
         }
@@ -106,12 +106,12 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
       "id": 3,
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Total Tokens",
-      "description": "Input + output tokens",
+      "title": "合計トークン",
+      "description": "入力 + 出力トークン数",
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_token_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
           "legendFormat": "tokens",
           "refId": "A"
         }
@@ -129,22 +129,23 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
       "id": 4,
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto" },
-      "title": "Active Time",
-      "description": "Total active coding time",
+      "title": "アクティブ時間",
+      "description": "合計アクティブコーディング時間",
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_active_time_total_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / 3600",
+          "expr": "sum(increase(claude_code_active_time_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / 3600",
           "legendFormat": "hours",
           "refId": "A"
         }
       ]
     },
+
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
       "id": 101,
-      "title": "Sessions & Activity",
+      "title": "セッション & アクティビティ",
       "type": "row"
     },
     {
@@ -152,17 +153,13 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" }
-          }
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } }
         }
       },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
       "id": 5,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Sessions by User",
+      "title": "ユーザー別セッション",
       "type": "timeseries",
       "targets": [
         {
@@ -177,32 +174,29 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } },
           "unit": "m"
         }
       },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
       "id": 6,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Active Time by User",
+      "title": "ユーザー別アクティブ時間",
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (user_name) (increase(claude_code_active_time_total_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval])) / 60",
+          "expr": "sum by (user_name) (increase(claude_code_active_time_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval])) / 60",
           "legendFormat": "{{user_name}}",
           "refId": "A"
         }
       ]
     },
+
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
       "id": 102,
-      "title": "Tokens & Cost",
+      "title": "トークン & コスト",
       "type": "row"
     },
     {
@@ -210,22 +204,18 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 30,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "line", "fillOpacity": 30, "stacking": { "mode": "normal" } },
           "unit": "short"
         }
       },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
       "id": 7,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Token Usage by Type",
+      "title": "タイプ別トークン使用量",
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (type) (increase(claude_code_token_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "expr": "sum by (type) (increase(claude_code_token_usage_tokens_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{type}}",
           "refId": "A"
         }
@@ -236,32 +226,52 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 30,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "line", "fillOpacity": 30, "stacking": { "mode": "normal" } },
           "unit": "currencyUSD"
         }
       },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
       "id": 8,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Cost by User",
+      "title": "ユーザー別コスト",
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (user_name) (increase(claude_code_cost_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "expr": "sum by (user_name) (increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{user_name}}",
           "refId": "A"
         }
       ]
     },
     {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 30, "stacking": { "mode": "normal" } },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "id": 20,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
+      "title": "モデル別コスト",
+      "description": "使用モデル（Opus/Sonnet/Haiku等）ごとの推定APIコスト",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (model) (increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
       "id": 103,
-      "title": "Code Changes",
+      "title": "コード変更",
       "type": "row"
     },
     {
@@ -269,18 +279,14 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
       "id": 9,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Lines of Code (Added / Removed)",
+      "title": "コード変更行数（追加 / 削除）",
       "type": "timeseries",
       "targets": [
         {
@@ -295,18 +301,14 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
       "id": 10,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Commits & PRs by User",
+      "title": "ユーザー別コミット & PR",
       "type": "timeseries",
       "targets": [
         {
@@ -326,19 +328,15 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
       "id": 14,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Edit/Write Accept vs Reject",
-      "description": "Code edit tool decisions (accept/reject) by tool type",
+      "title": "Edit/Write 承認 vs 却下",
+      "description": "コード編集ツールの判断（承認/却下）をツール別に表示",
       "type": "timeseries",
       "targets": [
         {
@@ -353,19 +351,15 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "stacking": { "mode": "normal" }
-          },
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } },
           "unit": "short"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
       "id": 15,
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
-      "title": "Edit/Write Decisions by Language",
-      "description": "Code edit decisions broken down by programming language",
+      "title": "言語別 Edit/Write 判断",
+      "description": "プログラミング言語別のコード編集判断",
       "type": "timeseries",
       "targets": [
         {
@@ -375,16 +369,67 @@
         }
       ]
     },
+
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
-      "id": 104,
-      "title": "Tool Usage (Logs)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "id": 108,
+      "title": "API パフォーマンス",
       "type": "row"
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 41 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 49 },
+      "id": 21,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "API リクエストログ",
+      "description": "各APIリクエストの詳細。model, cost_usd, duration_ms, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens を確認可能。キャッシュヒット率やレスポンス時間の分析に使用。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:api_request",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 59 },
+      "id": 22,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "API エラーログ",
+      "description": "APIエラーの一覧。status_code（429=レート制限, 500=サーバーエラー等）, error内容, attempt（リトライ回数）を確認可能。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:api_error",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 69 },
+      "id": 104,
+      "title": "ツール分析",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 70 },
       "id": 11,
       "options": {
         "dedupStrategy": "none",
@@ -393,8 +438,8 @@
         "sortOrder": "Descending",
         "wrapLogMessage": true
       },
-      "title": "Tool Executions",
-      "description": "Recent tool_result events showing tool usage. Use LogsQL filters to narrow down.",
+      "title": "ツール実行一覧",
+      "description": "全 tool_result イベントの一覧。LogsQL フィルターで絞り込み可能。",
       "type": "logs",
       "targets": [
         {
@@ -404,15 +449,58 @@
       ]
     },
     {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 80 },
+      "id": 23,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "ツール失敗ログ",
+      "description": "失敗したツール実行のみを抽出。error フィールドでエラーパターンを把握。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND success:\"false\"",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 80 },
+      "id": 24,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "Bash コマンドログ",
+      "description": "Bash ツールで実行されたコマンドの一覧。tool_parameters に bash_command, full_command, description, sandbox が含まれる。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:Bash",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 51 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 90 },
       "id": 105,
-      "title": "MCP & Skill Usage (Logs)",
+      "title": "MCP・スキル・エージェント",
       "type": "row"
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 52 },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 91 },
       "id": 12,
       "options": {
         "dedupStrategy": "none",
@@ -421,19 +509,19 @@
         "sortOrder": "Descending",
         "wrapLogMessage": true
       },
-      "title": "MCP Server Calls",
-      "description": "MCP server invocations (requires OTEL_LOG_TOOL_DETAILS=1)",
+      "title": "MCP サーバー呼び出し",
+      "description": "MCP ツール呼び出し。tool_name は 'mcp_tool' に統一される。詳細（サーバー名・ツール名）は tool_parameters に含まれる。",
       "type": "logs",
       "targets": [
         {
-          "expr": "event.name:tool_result AND tool_parameters:mcp_server_name",
+          "expr": "event.name:tool_result AND tool_name:mcp_tool",
           "refId": "A"
         }
       ]
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 52 },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 91 },
       "id": 13,
       "options": {
         "dedupStrategy": "none",
@@ -442,12 +530,112 @@
         "sortOrder": "Descending",
         "wrapLogMessage": true
       },
-      "title": "Skill Usage",
-      "description": "Skill invocations (requires OTEL_LOG_TOOL_DETAILS=1)",
+      "title": "スキル & コマンド",
+      "description": "Skill ツール呼び出し（/doc-check, /tf-check 等のプログラム的なスキル実行）",
       "type": "logs",
       "targets": [
         {
-          "expr": "event.name:tool_result AND tool_parameters:skill_name",
+          "expr": "event.name:tool_result AND tool_name:Skill",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 101 },
+      "id": 16,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "エージェント使用状況",
+      "description": "Task ツール呼び出し。subagent_type はテレメトリに含まれない（既知の制限）。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:Task",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 101 },
+      "id": 17,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "カスタムツール一覧",
+      "description": "MCP・スキル・エージェント呼び出しの統合ビュー",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND (tool_name:mcp_tool OR tool_name:Skill OR tool_name:Task)",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 111 },
+      "id": 106,
+      "title": "ツール許可判断ログ",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 112 },
+      "id": 18,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "ツール許可判断",
+      "description": "ツール実行の許可/拒否判断。tool_name, decision, source を表示。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:tool_decision",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 122 },
+      "id": 107,
+      "title": "ユーザープロンプト",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 123 },
+      "id": 19,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "ユーザープロンプト一覧",
+      "description": "ユーザーが入力したプロンプト。prompt フィールドに内容が含まれる（OTEL_LOG_USER_PROMPTS=1 で有効化済み）。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:user_prompt",
           "refId": "A"
         }
       ]

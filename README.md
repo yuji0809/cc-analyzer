@@ -96,6 +96,8 @@ sudo docker ps
     "OTEL_EXPORTER_OTLP_ENDPOINT": "http://cc-analyzer:4317",
     "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
     "OTEL_LOG_TOOL_DETAILS": "1",
+    "OTEL_LOG_USER_PROMPTS": "1",
+    "OTEL_METRICS_INCLUDE_VERSION": "true",
     "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
   }
 }
@@ -109,6 +111,8 @@ sudo docker ps
 
 > `.claude/settings.local.json` が作成され、`user.name` がテレメトリに含まれるようになる。
 > `.zshrc` への設定は不要。テレメトリは設定があるリポジトリのセッションだけに限定される。
+>
+> **重要**: このスクリプトを実行しないと、ダッシュボードの「User」フィルターでユーザーを識別できません。必ず各メンバーが実行してください。
 
 ### 5. ダッシュボードにアクセス
 
@@ -164,6 +168,8 @@ cd infra
 terraform destroy
 ```
 
-## 詳細設計
+## リファレンス
 
-[DESIGN.md](./DESIGN.md) を参照。
+- [Claude Code テレメトリ公式ドキュメント](https://code.claude.com/docs/ja/monitoring-usage) — OpenTelemetry の有効化・設定・環境変数の公式リファレンス。テレメトリ関連で困ったらまずここを参照。
+- [DESIGN.md](./DESIGN.md) — 本プロジェクトの詳細設計
+- [DASHBOARD.md](./DASHBOARD.md) — ダッシュボードで見れる情報一覧

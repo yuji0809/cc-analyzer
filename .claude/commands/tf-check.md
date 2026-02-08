@@ -1,39 +1,16 @@
 # Terraform 事前チェック
 
-`infra/` ディレクトリで以下のコマンドを順番に実行し、結果をまとめてください。
+Task ツールで Terraform チェック用エージェントを `subagent_type: "Bash"` として起動し、`infra/` ディレクトリで以下の3ステップを順番に実行してください。
 
-## 1. terraform fmt -check
+## エージェントへの指示
 
-フォーマットが正しいか確認。差分がある場合は `terraform fmt` で自動修正してください。
-
-```bash
-cd infra && terraform fmt -check -diff
-```
-
-差分があった場合:
-```bash
-cd infra && terraform fmt
-```
-
-## 2. terraform validate
-
-構文・参照エラーがないか確認。
-
-```bash
-cd infra && terraform validate
-```
-
-## 3. terraform plan
-
-実際のインフラとの差分を確認。**apply は実行しないでください。**
-
-```bash
-cd infra && terraform plan
-```
+1. `terraform fmt -check -diff` を実行。差分がある場合は `terraform fmt` で自動修正
+2. `terraform validate` を実行
+3. `terraform plan` を実行（**apply は実行しない**）
 
 ## 出力フォーマット
 
-各ステップの結果を以下の形式で報告してください：
+エージェントの結果を受け取ったら、以下の形式でユーザーに報告してください：
 
 | ステップ | 結果 | 詳細 |
 |---------|------|------|
