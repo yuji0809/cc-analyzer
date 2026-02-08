@@ -416,32 +416,56 @@ Tailscale VPN によるゼロトラストネットワークを採用。インタ
 
 ## 6. メンバーセットアップ
 
-### 6.1 各メンバーが設定する環境変数
+### 6.1 プロジェクト単位のテレメトリ設定
 
-以下を `.zshrc` または `.bashrc` に追加する。
+テレメトリはシェルのグローバル環境変数（`.zshrc` 等）ではなく、**対象リポジトリの `.claude/settings.json`** で設定する。これにより、テレメトリは設定を置いたリポジトリでのセッションだけに限定され、個人プロジェクトのデータは送信されない。
 
-```bash
-# Claude Code テレメトリ送信の有効化
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
+#### 共有設定（`.claude/settings.json`、Git にコミット）
 
-# OTEL 送信設定
-export OTEL_METRICS_EXPORTER=otlp
-export OTEL_LOGS_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://cc-analyzer:4317
+対象リポジトリのルートに `.claude/settings.json` を作成し、コミットする:
 
-# ツール詳細ログの有効化（MCP名・スキル名を取得するために必須）
-export OTEL_LOG_TOOL_DETAILS=1
+```json
+{
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://cc-analyzer:4317",
+    "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
+    "OTEL_LOG_TOOL_DETAILS": "1",
+    "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
+  }
+}
+```
+
+#### 個人設定（`.claude/settings.local.json`、`.gitignore` に追加）
+
+各メンバーは `.claude/settings.local.json` を作成し、`user.name` を追加する:
+
+```json
+{
+  "env": {
+    "OTEL_RESOURCE_ATTRIBUTES": "user.name=YOUR_NAME,project.name=REPO_NAME"
+  }
+}
+```
+
+> **Note:** `settings.local.json` は `settings.json` より優先されるため、`OTEL_RESOURCE_ATTRIBUTES` はここで指定した値で上書きされる。`project.name` も忘れずに含めること。
+
+対象リポジトリの `.gitignore` に以下を追加:
+
+```
+.claude/settings.local.json
 ```
 
 ### 6.2 セットアップスクリプト
 
-`terraform output` から GCE の静的IPを取得し、上記の環境変数を自動的に `.zshrc` に追記するセットアップスクリプトを提供する。
+対象リポジトリのルートで以下を実行すると、`.claude/settings.local.json` が自動作成される。
 
 ```bash
-# メンバーは以下を実行するだけ
-./setup-member.sh
-source ~/.zshrc
+# 対象リポジトリのルートで実行
+/path/to/cc-analyzer/setup-member.sh
 ```
 
 ---
@@ -554,7 +578,7 @@ cc-analyzer/
   ├── startup.sh                       # インスタンス起動時の自動セットアップ
   ├── docker-compose.yml               # 全コンテナ定義
   ├── otel-collector-config.yaml       # OTEL Collector設定
-  ├── setup-member.sh                  # メンバー環境変数セットアップ
+  ├── setup-member.sh                  # メンバーセットアップスクリプト
   ├── grafana/
   │   └── provisioning/
   │       ├── datasources/
@@ -562,6 +586,17 @@ cc-analyzer/
   │       └── dashboards/
   │           ├── dashboards.yml
   │           └── team-dashboard.json
+  ├── .claude/
+  │   ├── settings.json                # Claude Code テレメトリ設定（共有）
+  │   ├── settings.local.json          # 個人設定（.gitignore）
+  │   ├── agents/
+  │   │   └── documentation-agent.md   # ドキュメント整合性チェック用エージェント
+  │   ├── commands/
+  │   │   └── doc-check.md             # /doc-check コマンド定義
+  │   └── skills/
+  │       ├── documentation-check.md   # ドキュメントチェックスキル
+  │       ├── terraform-skill.md       # Terraform 操作スキル
+  │       └── terraform-style-guide.md # Terraform スタイルガイド
   └── .gitignore
 ```
 

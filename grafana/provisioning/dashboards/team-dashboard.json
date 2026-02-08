@@ -12,12 +12,26 @@
   "templating": {
     "list": [
       {
+        "name": "project",
+        "label": "Project",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+        "definition": "label_values(claude_code_session_count_total, project_name)",
+        "query": "label_values(claude_code_session_count_total, project_name)",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "refresh": 2,
+        "sort": 1
+      },
+      {
         "name": "user",
         "label": "User",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "victoriametrics" },
-        "definition": "label_values(claude_code_session_count_total, user_name)",
-        "query": "label_values(claude_code_session_count_total, user_name)",
+        "definition": "label_values(claude_code_session_count_total{project_name=~\"$project\"}, user_name)",
+        "query": "label_values(claude_code_session_count_total{project_name=~\"$project\"}, user_name)",
         "includeAll": true,
         "multi": true,
         "allValue": ".*",
@@ -51,7 +65,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_session_count_total{user_name=~\"$user\"}[$__range]))",
+          "expr": "sum(increase(claude_code_session_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
           "legendFormat": "sessions",
           "refId": "A"
         }
@@ -74,7 +88,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_cost_usage_total{user_name=~\"$user\"}[$__range]))",
+          "expr": "sum(increase(claude_code_cost_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
           "legendFormat": "cost",
           "refId": "A"
         }
@@ -97,7 +111,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_token_usage_total{user_name=~\"$user\"}[$__range]))",
+          "expr": "sum(increase(claude_code_token_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
           "legendFormat": "tokens",
           "refId": "A"
         }
@@ -120,7 +134,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(increase(claude_code_active_time_total_seconds_total{user_name=~\"$user\"}[$__range])) / 3600",
+          "expr": "sum(increase(claude_code_active_time_total_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / 3600",
           "legendFormat": "hours",
           "refId": "A"
         }
@@ -152,7 +166,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (user_name) (increase(claude_code_session_count_total{user_name=~\"$user\"}[$__interval]))",
+          "expr": "sum by (user_name) (increase(claude_code_session_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{user_name}}",
           "refId": "A"
         }
@@ -178,7 +192,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (user_name) (increase(claude_code_active_time_total_seconds_total{user_name=~\"$user\"}[$__interval])) / 60",
+          "expr": "sum by (user_name) (increase(claude_code_active_time_total_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval])) / 60",
           "legendFormat": "{{user_name}}",
           "refId": "A"
         }
@@ -211,7 +225,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (type) (increase(claude_code_token_usage_total{user_name=~\"$user\"}[$__interval]))",
+          "expr": "sum by (type) (increase(claude_code_token_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{type}}",
           "refId": "A"
         }
@@ -237,7 +251,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (user_name) (increase(claude_code_cost_usage_total{user_name=~\"$user\"}[$__interval]))",
+          "expr": "sum by (user_name) (increase(claude_code_cost_usage_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{user_name}}",
           "refId": "A"
         }
@@ -270,7 +284,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (type) (increase(claude_code_lines_of_code_count_total{user_name=~\"$user\"}[$__interval]))",
+          "expr": "sum by (type) (increase(claude_code_lines_of_code_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{type}}",
           "refId": "A"
         }
@@ -296,12 +310,12 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (user_name) (increase(claude_code_commit_count_total{user_name=~\"$user\"}[$__interval]))",
+          "expr": "sum by (user_name) (increase(claude_code_commit_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{user_name}} commits",
           "refId": "A"
         },
         {
-          "expr": "sum by (user_name) (increase(claude_code_pull_request_count_total{user_name=~\"$user\"}[$__interval]))",
+          "expr": "sum by (user_name) (increase(claude_code_pull_request_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
           "legendFormat": "{{user_name}} PRs",
           "refId": "B"
         }

@@ -68,19 +68,33 @@ sudo docker ps
 
 1. **Tailscale をインストール**: https://tailscale.com/download
 2. **同じ Tailnet にログイン**
-3. **環境変数を設定** (.zshrc / .bashrc に追記):
+3. **対象リポジトリにテレメトリ設定を追加**:
+
+リポジトリ管理者が `.claude/settings.json` をコミット（リポジトリごとに1回）:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://cc-analyzer:4317",
+    "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
+    "OTEL_LOG_TOOL_DETAILS": "1",
+    "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
+  }
+}
+```
+
+各メンバーがセットアップスクリプトを実行（対象リポジトリのルートで）:
 
 ```bash
-# === Claude Code Team Dashboard ===
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
-export OTEL_METRICS_EXPORTER=otlp
-export OTEL_LOGS_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://cc-analyzer:4317
-export OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative
-export OTEL_LOG_TOOL_DETAILS=1
-export OTEL_RESOURCE_ATTRIBUTES="user.name=YOUR_NAME"  # ダッシュボードでの表示名
+/path/to/cc-analyzer/setup-member.sh
 ```
+
+> `.claude/settings.local.json` が作成され、`user.name` がテレメトリに含まれるようになる。
+> `.zshrc` への設定は不要。テレメトリは設定があるリポジトリのセッションだけに限定される。
 
 ### 5. ダッシュボードにアクセス
 

@@ -18,19 +18,25 @@ output "emergency_ssh" {
   value       = "gcloud compute ssh cc-analyzer --zone=${var.zone}"
 }
 
-output "member_env_vars" {
-  description = "Environment variables for team members"
+output "claude_settings_json" {
+  description = "Contents of .claude/settings.json to add to target repositories"
   value       = <<-EOT
 
-    # === Claude Code Team Dashboard ===
-    # Requires: Tailscale connected to the same Tailnet
-    export CLAUDE_CODE_ENABLE_TELEMETRY=1
-    export OTEL_METRICS_EXPORTER=otlp
-    export OTEL_LOGS_EXPORTER=otlp
-    export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-    export OTEL_EXPORTER_OTLP_ENDPOINT=http://cc-analyzer:4317
-    export OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=cumulative
-    export OTEL_LOG_TOOL_DETAILS=1
-    export OTEL_RESOURCE_ATTRIBUTES="user.name=YOUR_NAME"
+    Add this to .claude/settings.json in each target repository:
+
+    {
+      "env": {
+        "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+        "OTEL_METRICS_EXPORTER": "otlp",
+        "OTEL_LOGS_EXPORTER": "otlp",
+        "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://cc-analyzer:4317",
+        "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
+        "OTEL_LOG_TOOL_DETAILS": "1",
+        "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
+      }
+    }
+
+    Then each member runs: /path/to/cc-analyzer/setup-member.sh
   EOT
 }

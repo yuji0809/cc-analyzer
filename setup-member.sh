@@ -2,51 +2,60 @@
 # ============================================================
 # Claude Code Team Dashboard - メンバーセットアップスクリプト
 #
+# 対象リポジトリのルートで実行すると、
+# .claude/settings.local.json を作成する。
+#
 # 使い方:
-#   1. terraform output -raw member_env_vars でIPを確認
-#   2. このスクリプトの DASHBOARD_IP を更新
-#   3. メンバーに配布して実行してもらう
+#   cd /path/to/target-repo
+#   /path/to/cc-analyzer/setup-member.sh
 # ============================================================
 
 set -euo pipefail
 
-DASHBOARD_IP="__REPLACE_WITH_TERRAFORM_OUTPUT__"
-
-# Detect shell config file
-if [ -f "$HOME/.zshrc" ]; then
-  SHELL_RC="$HOME/.zshrc"
-elif [ -f "$HOME/.bashrc" ]; then
-  SHELL_RC="$HOME/.bashrc"
-else
-  echo "Error: .zshrc or .bashrc not found"
+# Check if .claude/settings.json exists (confirms this is a configured repo)
+if [ ! -f ".claude/settings.json" ]; then
+  echo "Error: .claude/settings.json not found in current directory."
+  echo "This script must be run from a repository that has .claude/settings.json configured."
   exit 1
 fi
 
+LOCAL_SETTINGS=".claude/settings.local.json"
+
 # Check if already configured
-if grep -q "CLAUDE_CODE_ENABLE_TELEMETRY" "$SHELL_RC" 2>/dev/null; then
-  echo "⚠️  Already configured in $SHELL_RC"
-  echo "   To reconfigure, remove the '# === Claude Code Team Dashboard ===' block first."
+if [ -f "$LOCAL_SETTINGS" ]; then
+  echo "Already configured: $LOCAL_SETTINGS"
+  echo "To reconfigure, delete the file first."
   exit 0
 fi
 
-# Add environment variables
-cat >> "$SHELL_RC" << EOF
+# Get user name
+read -rp "Enter your display name for the dashboard: " USER_NAME
 
-# === Claude Code Team Dashboard ===
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
-export OTEL_METRICS_EXPORTER=otlp
-export OTEL_LOGS_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://${DASHBOARD_IP}:4317
-export OTEL_LOG_TOOL_DETAILS=1
+if [ -z "$USER_NAME" ]; then
+  echo "Error: Name cannot be empty."
+  exit 1
+fi
+
+# Derive project name from directory
+PROJECT_NAME=$(basename "$(pwd)")
+
+# Create .claude/settings.local.json
+cat > "$LOCAL_SETTINGS" << EOF
+{
+  "env": {
+    "OTEL_RESOURCE_ATTRIBUTES": "user.name=${USER_NAME},project.name=${PROJECT_NAME}"
+  }
+}
 EOF
 
-echo "✅ Added to $SHELL_RC"
+echo "Created: $LOCAL_SETTINGS"
 echo ""
-echo "Run the following to apply:"
-echo "  source $SHELL_RC"
+echo "  user.name:    $USER_NAME"
+echo "  project.name: $PROJECT_NAME"
 echo ""
-echo "Dashboard: http://${DASHBOARD_IP}:3000"
-echo ""
-echo "To verify telemetry is being sent, start a Claude Code session"
-echo "and check the dashboard after a few minutes."
+
+# Suggest adding to .gitignore if not already there
+if ! grep -q "settings.local.json" .gitignore 2>/dev/null; then
+  echo "Tip: Add the following to .gitignore:"
+  echo "  .claude/settings.local.json"
+fi
