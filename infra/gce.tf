@@ -17,7 +17,7 @@ resource "google_compute_instance" "dashboard" {
   boot_disk {
     initialize_params {
       image = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
-      size  = 30   # GB - Always Free limit
+      size  = 30            # GB - Always Free limit
       type  = "pd-standard" # Must be standard for Always Free
     }
   }
@@ -30,19 +30,20 @@ resource "google_compute_instance" "dashboard" {
   }
 
   metadata_startup_script = templatefile("${path.module}/startup.sh", {
-    grafana_admin_user     = var.grafana_admin_user
-    grafana_admin_password = var.grafana_admin_password
-    tailscale_auth_key     = var.tailscale_auth_key
-    docker_compose         = file("${path.module}/docker-compose.yml")
-    otel_collector_config  = file("${path.module}/otel-collector-config.yaml")
-    grafana_datasources    = file("${path.module}/grafana/provisioning/datasources/datasources.yml")
-    grafana_dashboards     = file("${path.module}/grafana/provisioning/dashboards/dashboards.yml")
-    grafana_team_dashboard = file("${path.module}/grafana/provisioning/dashboards/team-dashboard.json")
+    project_id                  = var.project_id
+    grafana_admin_user          = var.grafana_admin_user
+    google_oauth_client_id      = var.google_oauth_client_id
+    google_oauth_allowed_domain = var.google_oauth_allowed_domain
+    docker_compose              = file("${path.module}/docker-compose.yml")
+    otel_collector_config       = file("${path.module}/otel-collector-config.yaml")
+    grafana_datasources         = file("${path.module}/grafana/provisioning/datasources/datasources.yml")
+    grafana_dashboards          = file("${path.module}/grafana/provisioning/dashboards/dashboards.yml")
+    grafana_team_dashboard      = file("${path.module}/grafana/provisioning/dashboards/team-dashboard.json")
   })
 
-  # Prevent Ops Agent (not needed, saves resources)
   service_account {
-    scopes = ["compute-ro"]
+    email  = google_service_account.dashboard.email
+    scopes = ["cloud-platform"]
   }
 
   scheduling {

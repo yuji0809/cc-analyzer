@@ -38,3 +38,19 @@ variable "tailscale_auth_key" {
   type        = string
   sensitive   = true
 }
+
+variable "google_oauth_client_id" {
+  description = "Google OAuth Client ID for Grafana SSO (create at GCP Console > APIs & Services > Credentials)"
+  type        = string
+}
+
+variable "google_oauth_client_secret" {
+  description = "Google OAuth Client Secret for Grafana SSO"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_oauth_allowed_domain" {
+  description = "Allowed Google Workspace domain for Grafana login (e.g. yourcompany.com)"
+  type        = string
+}

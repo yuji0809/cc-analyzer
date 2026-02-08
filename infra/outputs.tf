@@ -4,8 +4,8 @@ output "instance_ip" {
 }
 
 output "grafana_url" {
-  description = "Grafana dashboard URL (Tailscale required)"
-  value       = "http://cc-analyzer:3000"
+  description = "Grafana dashboard URL (Tailscale HTTPS)"
+  value       = "https://cc-analyzer.<tailnet>.ts.net (check Tailscale Admin Console for exact FQDN)"
 }
 
 output "otel_endpoint" {

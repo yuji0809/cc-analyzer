@@ -6,6 +6,13 @@ grafana_admin_user     = "your-username"
 grafana_admin_password = "your-secure-password-here"
 tailscale_auth_key     = "tskey-auth-xxxxx" # https://login.tailscale.com/admin/settings/keys
 
+# Google OAuth for Grafana SSO
+# 1. GCP Console > APIs & Services > Credentials > Create OAuth Client ID
+# 2. Authorized redirect URI: https://cc-analyzer.<tailnet>.ts.net/login/google
+google_oauth_client_id      = "xxxx.apps.googleusercontent.com"
+google_oauth_client_secret  = "GOCSPX-xxxx"
+google_oauth_allowed_domain = "yourcompany.com"
+
 # Optional (uncomment to override defaults)
 # region             = "us-central1"       # default: "us-central1"
 # zone               = "us-central1-a"     # default: "us-central1-a"

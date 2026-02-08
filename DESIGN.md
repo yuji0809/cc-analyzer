@@ -351,10 +351,10 @@ e2-micro の 1GB RAM で 4 コンテナを動かすためのメモリ計画。
 
 | コンポーネント | メモリ上限設定 | 備考 |
 |-------------|-------------|------|
-| OTEL Collector | ~100MB | 軽量、受信のみ |
-| VictoriaMetrics | ~100-150MB | メモリ消費が安定（スパイクなし） |
-| VictoriaLogs | ~100-150MB | シングルバイナリ、ゼロコンフィグ |
-| Grafana | ~150-200MB | ダッシュボード描画 |
+| OTEL Collector | 128MB | 軽量、受信のみ |
+| VictoriaMetrics | 192MB | メモリ消費が安定（スパイクなし） |
+| VictoriaLogs | 192MB | シングルバイナリ、ゼロコンフィグ |
+| Grafana | 256MB | ダッシュボード描画 |
 | OS + Docker | ~200MB | - |
 | swap | 1-2GB | ピーク時のバッファ |
 | **合計** | **~650-850MB** | 1GB以内に収まる |
@@ -363,17 +363,19 @@ startup.sh で 1-2GB の swapfile を作成し、ピーク時のOOMを防止す�
 
 ### 5.4 セキュリティ
 
-Tailscale VPN によるゼロトラストネットワークを採用。インターネットへのポート公開を排除した。
+Tailscale VPN によるゼロトラストネットワークを採用。インターネットへのポート公開を排除し、HTTPS + Google OAuth SSO で多層防御を実現。
 
 | 対策 | 内容 |
 |------|------|
-| ネットワーク | Tailscale VPN 経由のみ。Grafana(:3000)、OTEL(:4317) はインターネットに非公開 |
-| Grafana認証 | Terraform で設定したパスワードによるログイン |
+| ネットワーク | Tailscale VPN 経由のみ。OTEL(:4317) はインターネットに非公開 |
+| HTTPS | Tailscale HTTPS (`tailscale serve`) により Let's Encrypt 証明書を自動取得・更新 |
+| Grafana認証 | Google OAuth SSO（特定ドメイン制限）+ 管理者パスワード（フォールバック） |
+| シークレット管理 | GCP Secret Manager で暗号化保存。VM は実行時にメタデータサーバー経由で取得 |
 | SSH | Tailscale 経由の SSH でアクセス（GCPファイアウォールによるポート公開は不要） |
-| 暗号化 | Tailscale は WireGuard ベース。全通信がエンドツーエンドで暗号化される |
+| 暗号化 | Tailscale は WireGuard ベース。全通信がエンドツーエンドで暗号化。Grafana は追加で TLS |
 | アクセス制御 | Tailnet に参加したデバイスのみアクセス可能。Tailscale Admin Console でデバイス管理 |
 
-**Tailscale の役割 — ファイアウォール + VPN + DNS を兼務:**
+**Tailscale の役割 — ファイアウォール + VPN + DNS + HTTPS を兼務:**
 
 通常、GCE でサービスを公開する場合はファイアウォールルール（ポート開放、IP制限）、HTTPS化（証明書管理）、アプリケーション層の認証強化が必要になる。本構成では Tailscale がこれらを全て代替している。
 
@@ -384,18 +386,49 @@ Tailscale VPN によるゼロトラストネットワークを採用。インタ
                      ファイアウォールで制御が必要
                      (IP制限、認証、HTTPS化...)
 
-本構成 (Tailscale経由):
-  ブラウザ → Tailscale暗号化トンネル → GCEのTailscale IP:3000 → Grafana
-             (同じTailnetのメンバーだけ)
+本構成 (Tailscale HTTPS経由):
+  ブラウザ → Tailscale暗号化トンネル → tailscale serve (TLS終端, :443)
+             (同じTailnetのメンバーだけ)        ↓
+                                         → localhost:3000 → Grafana
+                                           (127.0.0.1のみ、外部アクセス不可)
 ```
 
-これにより GCE ファイアウォールルールは一切不要で、パブリック IP にはどのポートも公開していない。
+これにより GCE ファイアウォールルールは一切不要で、パブリック IP にはどのポートも公開していない。Grafana へのアクセスは `https://cc-analyzer.<tailnet>.ts.net` の HTTPS のみ。
+
+**Tailscale HTTPS (`tailscale serve`) の仕組み:**
+
+- `tailscale serve --https=443 http://localhost:3000` でリバースプロキシを構成
+- Let's Encrypt 証明書を自動取得・更新（手動管理不要）
+- Tailnet 内のデバイスからのみアクセス可能（インターネットには非公開）
+- Grafana のポートは `127.0.0.1:3000` にバインドし、`tailscale serve` 経由でのみアクセス可能
+
+**Google OAuth SSO:**
+
+- Google Workspace の特定ドメインのアカウントのみログイン可能（`GF_AUTH_GOOGLE_ALLOWED_DOMAINS`）
+- 管理者アカウントはパスワード認証でフォールバック可能
+- OAuth リダイレクト先: `https://cc-analyzer.<tailnet>.ts.net/login/google`
+
+**Secret Manager によるシークレット管理:**
+
+機密情報（Grafana 管理者パスワード、Tailscale Auth Key、Google OAuth Client Secret）は GCP Secret Manager に保存される。GCE インスタンスの metadata（startup script）には機密値が含まれず、VM は起動時に専用サービスアカウント経由で Secret Manager API から取得する。
+
+```
+terraform.tfvars → Terraform → Secret Manager (暗号化 + IAM 制御)
+                                      ↓ VM 起動時に取得
+                                 startup.sh → docker-compose.yml
+```
+
+- Terraform が Secret Manager にシークレットを作成
+- GCE VM の専用サービスアカウントに `secretmanager.secretAccessor` ロールを付与
+- startup.sh は GCE メタデータサーバーからアクセストークンを取得し、Secret Manager REST API でシークレットを読み取る（gcloud CLI 不要）
+- Secret Manager の無料枠（6 シークレット、10,000 アクセス/月）で $0
 
 **Tailscale を採用した理由:**
 
 - ポート公開が不要になり、OTEL/Grafana への不正アクセスリスクがゼロ
 - WireGuard ベースで HTTP 通信も VPN トンネル内で暗号化される
-- MagicDNS により `cc-analyzer` のホスト名でアクセス可能（IP を覚える必要がない）
+- HTTPS 証明書の自動管理（`tailscale serve`）で運用負荷ゼロ
+- MagicDNS により `cc-analyzer.<tailnet>.ts.net` のホスト名でアクセス可能
 - 無料枠100台で小規模チームには十分
 - インストールが簡単（各メンバーは `tailscale up` するだけ）
 - GCE インスタンス側も startup script で自動セットアップ
@@ -478,8 +511,8 @@ Tailscale VPN によるゼロトラストネットワークを採用。インタ
 
 **ダッシュボードの確認:**
 
-1. ブラウザで `http://cc-analyzer:3000` を開く（Tailscale接続必須）
-2. Grafanaにログイン
+1. ブラウザで `https://cc-analyzer.<tailnet>.ts.net` を開く（Tailscale接続必須）
+2. Google OAuth でログイン（または管理者パスワードでログイン）
 3. 「Claude Code Team Dashboard」を開く
 4. 期間・メンバーをフィルターで切り替えて閲覧
 
@@ -528,34 +561,30 @@ Tailscale VPN によるゼロトラストネットワークを採用。インタ
 全てのGCPリソースをTerraformで管理する。
 
 ```
-main.tf                # provider設定、GCPプロジェクト
-variables.tf           # 変数定義（リージョン、プロジェクトID等）
-gce.tf                 # GCE インスタンス定義
-outputs.tf             # 出力値（静的IP、接続コマンド等）
-terraform.tfvars       # 変数値（.gitignoreに追加）
-terraform.tfvars.example # 変数値のテンプレート
-startup.sh             # インスタンス起動時の自動セットアップ
+infra/
+  ├── main.tf                    # provider設定
+  ├── apis.tf                    # GCP API有効化（compute, iam, secretmanager）
+  ├── variables.tf               # 変数定義（リージョン、プロジェクトID等）
+  ├── gce.tf                     # GCE インスタンス定義
+  ├── secrets.tf                 # Secret Manager、サービスアカウント、IAM
+  ├── outputs.tf                 # 出力値（静的IP、接続コマンド等）
+  ├── terraform.tfvars           # 変数値（.gitignoreに追加）
+  ├── terraform.tfvars.example   # 変数値のテンプレート
+  ├── startup.sh                 # インスタンス起動時の自動セットアップ
+  ├── docker-compose.yml         # 全コンテナ定義
+  ├── otel-collector-config.yaml # OTEL Collector設定
+  └── grafana/
+      └── provisioning/
+          ├── datasources/
+          │   └── datasources.yml    # VictoriaMetrics/Logsを自動登録
+          └── dashboards/
+              ├── dashboards.yml     # ダッシュボードプロビジョニング設定
+              └── team-dashboard.json # ダッシュボードJSON（Gitで管理）
 ```
 
 > **Note:** Tailscale VPN の採用により `firewall.tf` は不要（5.4 節参照）。
 
-### 8.2 Docker Compose による全サービス管理
-
-GCEインスタンス上で Docker Compose により4つのコンテナを管理する。
-
-```
-docker-compose.yml               # 全コンテナ定義
-otel-collector-config.yaml       # OTEL Collector設定
-grafana/
-  └── provisioning/
-      ├── datasources/
-      │   └── datasources.yml    # VictoriaMetrics/Logsを自動登録
-      └── dashboards/
-          ├── dashboards.yml     # ダッシュボードプロビジョニング設定
-          └── team-dashboard.json # ダッシュボードJSON（Gitで管理）
-```
-
-### 8.3 Grafana ダッシュボードのバックアップ
+### 8.2 Grafana ダッシュボードのバックアップ
 
 Grafanaのダッシュボードは内部的にJSONで構成されている。GUIで作成したダッシュボードをJSONエクスポートし、Gitリポジトリに保存する。
 
@@ -569,35 +598,39 @@ Grafanaのダッシュボードは内部的にJSONで構成されている。GUI
 cc-analyzer/
   ├── README.md                        # セットアップ手順
   ├── DESIGN.md                        # 本設計書
-  ├── main.tf                          # provider設定、GCPプロジェクト
-  ├── variables.tf                     # 変数定義
-  ├── gce.tf                           # GCE インスタンス定義
-  ├── outputs.tf                       # 出力値（静的IP、接続コマンド等）
-  ├── terraform.tfvars                 # 変数値（.gitignore）
-  ├── terraform.tfvars.example         # 変数値のテンプレート
-  ├── startup.sh                       # インスタンス起動時の自動セットアップ
-  ├── docker-compose.yml               # 全コンテナ定義
-  ├── otel-collector-config.yaml       # OTEL Collector設定
   ├── setup-member.sh                  # メンバーセットアップスクリプト
-  ├── grafana/
-  │   └── provisioning/
-  │       ├── datasources/
-  │       │   └── datasources.yml
-  │       └── dashboards/
-  │           ├── dashboards.yml
-  │           └── team-dashboard.json
-  ├── .claude/
-  │   ├── settings.json                # Claude Code テレメトリ設定（共有）
-  │   ├── settings.local.json          # 個人設定（.gitignore）
-  │   ├── agents/
-  │   │   └── documentation-agent.md   # ドキュメント整合性チェック用エージェント
-  │   ├── commands/
-  │   │   └── doc-check.md             # /doc-check コマンド定義
-  │   └── skills/
-  │       ├── documentation-check.md   # ドキュメントチェックスキル
-  │       ├── terraform-skill.md       # Terraform 操作スキル
-  │       └── terraform-style-guide.md # Terraform スタイルガイド
-  └── .gitignore
+  ├── .gitignore
+  ├── infra/                           # インフラ関連（Terraform + Docker）
+  │   ├── main.tf                      # provider設定
+  │   ├── apis.tf                      # GCP API有効化
+  │   ├── variables.tf                 # 変数定義
+  │   ├── gce.tf                       # GCE インスタンス定義
+  │   ├── secrets.tf                   # Secret Manager、サービスアカウント、IAM
+  │   ├── outputs.tf                   # 出力値（静的IP、接続コマンド等）
+  │   ├── terraform.tfvars             # 変数値（.gitignore）
+  │   ├── terraform.tfvars.example     # 変数値のテンプレート
+  │   ├── startup.sh                   # インスタンス起動時の自動セットアップ
+  │   ├── docker-compose.yml           # 全コンテナ定義
+  │   ├── otel-collector-config.yaml   # OTEL Collector設定
+  │   └── grafana/
+  │       └── provisioning/
+  │           ├── datasources/
+  │           │   └── datasources.yml
+  │           └── dashboards/
+  │               ├── dashboards.yml
+  │               └── team-dashboard.json
+  └── .claude/
+      ├── settings.json                # Claude Code テレメトリ設定（共有）
+      ├── settings.local.json          # 個人設定（.gitignore）
+      ├── agents/
+      │   └── documentation-agent.md   # ドキュメント整合性チェック用エージェント
+      ├── commands/
+      │   ├── doc-check.md             # /doc-check コマンド定義
+      │   └── tf-check.md              # /tf-check コマンド定義
+      └── skills/
+          ├── documentation-check.md   # ドキュメントチェックスキル
+          ├── terraform-skill.md       # Terraform 操作スキル
+          └── terraform-style-guide.md # Terraform スタイルガイド
 ```
 
 ---

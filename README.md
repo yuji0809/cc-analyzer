@@ -12,7 +12,7 @@ GCE e2-micro (Always Free) + Tailscale (hostname: cc-analyzer)
   ├── OTEL Collector   :4317  ← テレメトリ受信 (Tailscale内のみ)
   ├── VictoriaMetrics  :8428  ← メトリクス保存 (1年)
   ├── VictoriaLogs     :9428  ← ログ保存 (90日)
-  └── Grafana          :3000  ← ダッシュボード (Tailscale内のみ)
+  └── Grafana          :443   ← ダッシュボード (Tailscale HTTPS + Google OAuth)
 ```
 
 全ての通信は Tailscale VPN 経由。MagicDNS により `cc-analyzer` のホスト名でアクセスできる。
@@ -32,14 +32,28 @@ GCE e2-micro (Always Free) + Tailscale (hostname: cc-analyzer)
    - Reusable: ON（VMの再構築時に再利用可能）
    - Expiration: 任意
 3. MagicDNS が有効であることを確認 (https://login.tailscale.com/admin/dns)
-4. Auth Key を控えておく
+4. **HTTPS Certificates を有効化** (同じ DNS 設定ページ)
+   - `tailscale serve --https` による自動証明書取得に必要
+5. tailnet 名を控えておく（DNS ページに表示、例: `tail12345.ts.net`）
+6. Auth Key を控えておく
+
+### 1.5. Google OAuth の準備
+
+1. [GCP Console](https://console.cloud.google.com/) > APIs & Services > Credentials
+2. Create OAuth Client ID (Web application)
+3. 承認済みのリダイレクト URI: `https://cc-analyzer.<tailnet>.ts.net/login/google`
+   - `<tailnet>` は手順 1-5 で控えた tailnet 名
+   - 「承認済みの JavaScript 生成元」は空欄でOK（Grafana はサーバーサイド OAuth のため不要）
+4. Client ID と Client Secret を控えておく
 
 ### 2. Terraform でインフラ構築
 
 ```bash
+cd infra
+
 # 設定ファイルを作成
 cp terraform.tfvars.example terraform.tfvars
-# terraform.tfvars を編集（project_id, grafana_admin_password, tailscale_auth_key）
+# terraform.tfvars を編集（project_id, grafana_admin_password, tailscale_auth_key, google_oauth_*）
 
 # デプロイ
 terraform init
@@ -99,9 +113,9 @@ sudo docker ps
 ### 5. ダッシュボードにアクセス
 
 ```
-URL:  http://cc-analyzer:3000
-User: admin
-Pass: terraform.tfvars で設定したパスワード
+URL:  https://cc-analyzer.<tailnet>.ts.net
+認証: Google OAuth（許可ドメインのGoogleアカウントでログイン）
+管理者: admin / terraform.tfvars で設定したパスワード
 ```
 
 ## ローカル開発
@@ -109,6 +123,7 @@ Pass: terraform.tfvars で設定したパスワード
 Docker Compose でローカルでもダッシュボードを起動できる。
 
 ```bash
+cd infra
 GRAFANA_ADMIN_PASSWORD=admin docker compose up
 ```
 
@@ -140,11 +155,12 @@ gcloud compute ssh cc-analyzer --zone=us-central1-a
 
 ### ダッシュボードのバックアップ
 
-GUIで作成したダッシュボードはJSON形式でエクスポートできる。`grafana/provisioning/dashboards/` に保存すれば、再構築時に自動復元される。
+GUIで作成したダッシュボードはJSON形式でエクスポートできる。`infra/grafana/provisioning/dashboards/` に保存すれば、再構築時に自動復元される。
 
 ### 破棄
 
 ```bash
+cd infra
 terraform destroy
 ```
 

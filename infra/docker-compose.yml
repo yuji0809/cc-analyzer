@@ -55,12 +55,22 @@ services:
     container_name: grafana
     restart: always
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_PLUGINS_PREINSTALL=victoriametrics-logs-datasource
+      - GF_SERVER_ROOT_URL=https://__GRAFANA_FQDN__
+      - GF_AUTH_GOOGLE_ENABLED=true
+      - GF_AUTH_GOOGLE_CLIENT_ID=__GOOGLE_OAUTH_CLIENT_ID__
+      - GF_AUTH_GOOGLE_CLIENT_SECRET=__GOOGLE_OAUTH_CLIENT_SECRET__
+      - GF_AUTH_GOOGLE_ALLOWED_DOMAINS=__GOOGLE_OAUTH_ALLOWED_DOMAIN__
+      - GF_AUTH_GOOGLE_SCOPES=openid email profile
+      - GF_AUTH_GOOGLE_AUTH_URL=https://accounts.google.com/o/oauth2/v2/auth
+      - GF_AUTH_GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
+      - GF_AUTH_GOOGLE_API_URL=https://openidconnect.googleapis.com/v1/userinfo
+      - GF_AUTH_GOOGLE_AUTO_LOGIN=false
     volumes:
       - ./data/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

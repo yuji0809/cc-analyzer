@@ -1,4 +1,14 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(cd infra && terraform fmt*)",
+      "Bash(cd infra && terraform validate*)",
+      "Bash(cd infra && terraform plan*)",
+      "Bash(terraform fmt*)",
+      "Bash(terraform validate*)",
+      "Bash(terraform plan*)"
+    ]
+  },
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "OTEL_METRICS_EXPORTER": "otlp",
