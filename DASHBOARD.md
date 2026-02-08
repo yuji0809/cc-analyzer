@@ -77,13 +77,13 @@ API リクエストログと API エラーログの2パネル。
 
 ### 7. MCP・スキル・エージェント
 
-MCP サーバー呼び出し、スキル & コマンド、エージェント使用状況、カスタムツール一覧の4パネル。
+MCP サーバー呼び出し、スキル & コマンド、エージェント使用状況、カスタムツール一覧の4パネル + **スキル利用頻度**、**MCP ツール利用頻度**の集計テーブル2パネル。
 
-**わかること:** カスタム拡張機能（MCP サーバー、スキル、エージェント）の利用状況。
+**わかること:** カスタム拡張機能（MCP サーバー、スキル、エージェント）の利用状況と、コマンド別・ツール別の利用回数。
 
 **分析例:**
-- どの MCP サーバー・ツールが最も活用されているかを把握し、投資対効果を評価
-- カスタムスキル（/doc-check, /tf-check 等）の利用頻度で、チームへの浸透度を測定
+- スキル利用頻度テーブルで `/doc-check` や `/tf-check` の利用回数を定量化し、チームへの浸透度を測定
+- MCP ツール利用頻度テーブルで、サーバー・ツール別の利用回数を把握し、投資対効果を評価
 - エージェント（Task ツール）の使用頻度で、複雑なタスクの自動化度合いを把握
 - 利用されていないカスタムツールがあれば、廃止や改善を検討
 
@@ -109,6 +109,53 @@ MCP サーバー呼び出し、スキル & コマンド、エージェント使�
 - プロンプトの質を分析し、チーム向けのプロンプトガイドラインを作成
 - 「こういう使い方もできる」という好事例を発見し、チーム内で共有
 - プロンプト長の傾向から、タスクの複雑さの推移を把握
+
+### 10. ファイル読み込み追跡
+
+ファイル読み込みログと .md ファイル読み込みの2パネル。
+
+#### なぜ Hooks が必要か
+
+Claude Code のネイティブテレメトリでは、Read ツールの `tool_result` イベントに `tool_name: "Read"` は記録されるが、**読み込んだファイルパスは送信されない**（組み込みツールの `tool_parameters` は null）。そのため「どのファイルを読んだか」はテレメトリだけでは追跡できない。
+
+これを補完するために Claude Code の **Hooks 機能**（`PreToolUse`）を使い、Read ツール呼び出し時にファイルパスをキャプチャして VictoriaLogs に直接送信する仕組みを導入した。
+
+#### 仕組み
+
+```
+Developer PC (Claude Code)
+  │ Read ツール呼び出し
+  │   → PreToolUse hook 発火（async: true = バックグラウンド実行）
+  │     → .claude/hooks/log-file-reads.sh
+  │       1. stdin の JSON から file_path, session_id を抽出 (jq)
+  │       2. OTEL_RESOURCE_ATTRIBUTES から user.name, project.name を抽出
+  │       3. curl で VictoriaLogs に直接 POST
+  ▼
+cc-analyzer VM (Tailscale VPN 経由)
+  └── VictoriaLogs :9428/insert/jsonline
+        → Grafana ダッシュボードで可視化
+```
+
+**OTEL Collector を経由しない理由:** OTLP/gRPC で curl から送信するには protobuf JSON 形式が必要で複雑。VictoriaLogs の JSON Lines API（`/insert/jsonline`）は HTTP POST で1行 JSON を送るだけのシンプルな API。
+
+#### パフォーマンスへの影響
+
+- **Claude Code の応答速度:** 影響なし。`async: true` により hook はバックグラウンド実行され、Claude Code は hook の完了を待たずに Read ツールを即座に実行する
+- **VM のリソース:** 影響なし。1 Read あたり約 200 バイトの JSON 1行。5人 × 50 Read/セッション × 3セッション/日 = 約 750 リクエスト/日。VictoriaLogs のメモリ使用量（~20 MB / 192 MB 上限）に対して誤差レベル
+- **ネットワーク障害時:** curl に `--max-time 2` のタイムアウトと `|| true` を設定済み。Tailscale 未接続でも 2 秒で静かに失敗し、Claude Code に影響を与えない
+
+#### 前提条件
+
+- `jq` が必要（`brew install jq`）。hook スクリプト内で JSON パースに使用
+- Tailscale 接続中であること（`cc-analyzer:9428` に到達可能な状態）
+
+**わかること:** Claude Code がどのファイルを読んでいるか。特に CLAUDE.md やドキュメント（.md ファイル）がどれだけ参照されているか。
+
+**分析例:**
+- `.md` フィルターで CLAUDE.md やカスタムコマンドの .md がどれだけ読まれているかを追跡
+- よく読まれるファイルのパターンから、チームの調査・実装スタイルを把握
+- `session_id` でセッション単位の読み込みファイル一覧を確認し、作業の流れを追跡
+- 特定の設計ドキュメントが実際に参照されているかを検証
 
 ---
 
@@ -195,6 +242,17 @@ Claude Code が OTEL ログプロトコルで送信する全イベント。
 
 \* `tool_parameters` は JSON 文字列。全ツールに存在するわけではなく、上記の Bash / MCP / Skill でのみ出現する。
 \*\* `prompt` は `OTEL_LOG_USER_PROMPTS=1` 設定時のみ含まれる（有効化済み）。
+
+### Hooks カスタムイベント（1種類）
+
+ネイティブテレメトリでは取得できないデータを Hooks で補完し、VictoriaLogs に直接送信するカスタムイベント。OTEL Collector は経由しない。
+
+| イベント名 | 内容 | 送信先 | 属性 |
+|-----------|------|--------|------|
+| `hook.file_read` | Read ツールで読んだファイルパス | VictoriaLogs JSON Lines API (`cc-analyzer:9428/insert/jsonline`) | `file_path`, `file_extension`, `session_id`, `user.name`, `project.name`, `cwd` |
+
+**設定ファイル:** `.claude/settings.json` の `hooks.PreToolUse`（matcher: `"Read"`, async: `true`）
+**スクリプト:** `.claude/hooks/log-file-reads.sh`
 
 ### 共通属性
 

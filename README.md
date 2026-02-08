@@ -22,6 +22,7 @@ GCE e2-micro (Always Free) + Tailscale (hostname: cc-analyzer)
 - GCPプロジェクト（課金有効化済み）
 - Terraform >= 1.5
 - [Tailscale](https://tailscale.com/) アカウント（無料枠: 100台）
+- [jq](https://jqlang.github.io/jq/) — Hooks スクリプトで使用（`brew install jq`）
 
 ## セットアップ
 

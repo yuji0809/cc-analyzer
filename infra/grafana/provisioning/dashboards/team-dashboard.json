@@ -582,17 +582,45 @@
         }
       ]
     },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 111 },
+      "id": 27,
+      "title": "スキル利用頻度",
+      "description": "カスタムスラッシュコマンド（/doc-check, /tf-check 等）のコマンド別利用回数。チームへの浸透度を定量化。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:Skill | unpack_json from tool_parameters | stats count(*) as calls by (skill_name) | sort by (calls) desc",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 111 },
+      "id": 28,
+      "title": "MCP ツール利用頻度",
+      "description": "MCP サーバー・ツールごとの利用回数。どのカスタムツールが活用されているかを定量化。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:mcp_tool | unpack_json from tool_parameters | stats count(*) as calls by (mcp_server_name, mcp_tool_name) | sort by (calls) desc",
+          "refId": "A"
+        }
+      ]
+    },
 
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 111 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 121 },
       "id": 106,
       "title": "ツール許可判断ログ",
       "type": "row"
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 112 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 122 },
       "id": 18,
       "options": {
         "dedupStrategy": "none",
@@ -614,14 +642,14 @@
 
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 122 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 132 },
       "id": 107,
       "title": "ユーザープロンプト",
       "type": "row"
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 123 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 133 },
       "id": 19,
       "options": {
         "dedupStrategy": "none",
@@ -636,6 +664,56 @@
       "targets": [
         {
           "expr": "event.name:user_prompt",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 143 },
+      "id": 109,
+      "title": "ファイル読み込み追跡",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 144 },
+      "id": 25,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "ファイル読み込みログ",
+      "description": "Claude Code の Read ツールで読まれた全ファイルのログ。Hooks（PreToolUse）経由で収集。file_path, file_extension, user.name, session_id を表示。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:hook.file_read",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 144 },
+      "id": 26,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": ".md ファイル読み込み",
+      "description": "Markdown ファイル（CLAUDE.md, README.md, カスタムコマンド等）の読み込みログのみ表示。ドキュメント活用度の追跡に使用。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:hook.file_read AND file_extension:\".md\"",
           "refId": "A"
         }
       ]
