@@ -598,6 +598,7 @@ Grafanaのダッシュボードは内部的にJSONで構成されている。GUI
 cc-analyzer/
   ├── README.md                        # セットアップ手順
   ├── DESIGN.md                        # 本設計書
+  ├── DASHBOARD.md                     # ダッシュボードで見れる情報一覧
   ├── setup-member.sh                  # メンバーセットアップスクリプト
   ├── .gitignore
   ├── infra/                           # インフラ関連（Terraform + Docker）

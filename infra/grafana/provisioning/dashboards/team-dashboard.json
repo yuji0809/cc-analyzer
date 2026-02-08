@@ -322,15 +322,69 @@
       ]
     },
     {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "id": 14,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
+      "title": "Edit/Write Accept vs Reject",
+      "description": "Code edit tool decisions (accept/reject) by tool type",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (tool, decision) (increase(claude_code_code_edit_tool_decision_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{tool}} {{decision}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "id": 15,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] }, "tooltip": { "mode": "multi" } },
+      "title": "Edit/Write Decisions by Language",
+      "description": "Code edit decisions broken down by programming language",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (language) (increase(claude_code_code_edit_tool_decision_total{user_name=~\"$user\",project_name=~\"$project\",decision=\"accept\"}[$__interval]))",
+          "legendFormat": "{{language}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
       "id": 104,
       "title": "Tool Usage (Logs)",
       "type": "row"
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 33 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 41 },
       "id": 11,
       "options": {
         "dedupStrategy": "none",
@@ -351,14 +405,14 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 51 },
       "id": 105,
       "title": "MCP & Skill Usage (Logs)",
       "type": "row"
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 44 },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 52 },
       "id": 12,
       "options": {
         "dedupStrategy": "none",
@@ -372,14 +426,14 @@
       "type": "logs",
       "targets": [
         {
-          "expr": "event.name:tool_result AND mcp_server_name:*",
+          "expr": "event.name:tool_result AND tool_parameters:mcp_server_name",
           "refId": "A"
         }
       ]
     },
     {
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victorialogs" },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 44 },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 52 },
       "id": 13,
       "options": {
         "dedupStrategy": "none",
@@ -393,7 +447,7 @@
       "type": "logs",
       "targets": [
         {
-          "expr": "event.name:tool_result AND skill_name:*",
+          "expr": "event.name:tool_result AND tool_parameters:skill_name",
           "refId": "A"
         }
       ]
