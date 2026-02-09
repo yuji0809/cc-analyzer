@@ -79,13 +79,62 @@ ssh ubuntu@cc-analyzer
 sudo docker ps
 ```
 
-### 4. メンバーのセットアップ
+### 4. メンバーを Tailscale に招待（管理者）
 
-各メンバーは以下を行う:
+メンバーがテレメトリを送信するには、管理者の Tailnet に参加する必要がある。
 
-1. **Tailscale をインストール**: https://tailscale.com/download
-2. **同じ Tailnet にログイン**
-3. **対象リポジトリにテレメトリ設定を追加**:
+1. https://login.tailscale.com/admin/users を開く
+2. 「Invite users」からメンバーのメールアドレスを入力して招待を送信
+3. メンバーに「招待メールが届いたら承認してください」と伝える
+
+> **補足**: Google Workspace 等の同一組織アカウントであれば、招待なしで同じ Tailnet に自動参加できる場合がある。個人の Google アカウント等は明示的な招待が必要。
+
+### 5. メンバーのセットアップ
+
+以下はメンバー（招待された側）が行う手順。
+
+#### Step 1: Tailscale のインストール
+
+https://tailscale.com/download から自分の OS に合ったクライアントをインストール。
+
+- **macOS**: App Store からインストール、または `brew install --cask tailscale`
+- **Windows**: 公式サイトからインストーラをダウンロード
+- **Linux**: 公式ドキュメントの手順に従う
+
+#### Step 2: Tailnet にログイン
+
+1. Tailscale アプリを起動し「Log in」をクリック
+2. **管理者から届いた招待メールを承認済みであることを確認**
+3. 招待されたアカウント（メールアドレス）でログイン
+
+> **注意: 招待が見えない場合**
+> - 既に別の Tailnet（個人用など）にログイン中の場合、**一度ログアウトしてから再度ログイン**する必要がある
+> - ログアウト方法: Tailscale アプリ → メニュー → 「Log out」
+> - 再ログイン時に、招待された Tailnet が選択肢に表示される
+> - 招待メールのリンクをクリックしても Tailscale アプリに反映されない場合は、ブラウザで https://login.tailscale.com にアクセスし、招待を承認してからアプリで再ログインする
+
+> **macOS の場合**: 初回起動時に「"Tailscale" が VPN 構成の追加を求めています」というシステムダイアログが表示される。「許可」を選択する。許可しないと VPN 接続できない。
+
+#### Step 3: 接続確認
+
+```bash
+# Tailscale の状態確認（自分が接続中か）
+tailscale status
+
+# cc-analyzer への疎通確認
+ping -c 3 cc-analyzer
+
+# OTEL Collector への到達確認
+curl -s -o /dev/null -w '%{http_code}' http://cc-analyzer:4317
+# → "000" 以外が返れば到達可能（gRPC なので HTTP レスポンスコードは気にしなくてよい）
+```
+
+> **`cc-analyzer` が名前解決できない場合**:
+> - Tailscale にログイン済みか確認: `tailscale status` で `idle` や `active` と表示されるか
+> - MagicDNS が有効か管理者に確認してもらう（[DNS 設定](https://login.tailscale.com/admin/dns)）
+> - Tailscale を再起動してみる（macOS: メニューバーの Tailscale アイコン → 「Reconnect」）
+
+#### Step 4: テレメトリ設定
 
 リポジトリ管理者が `.claude/settings.json` をコミット（リポジトリごとに1回）:
 
@@ -101,7 +150,7 @@ sudo docker ps
     "OTEL_LOG_TOOL_DETAILS": "1",
     "OTEL_LOG_USER_PROMPTS": "1",
     "OTEL_METRICS_INCLUDE_VERSION": "true",
-    "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
+    "OTEL_RESOURCE_ATTRIBUTES": "bu.name=BU_NAME,team.name=TEAM_NAME,project.name=REPO_NAME"
   }
 }
 ```
@@ -112,18 +161,45 @@ sudo docker ps
 /path/to/cc-analyzer/setup-member.sh
 ```
 
+スクリプトは `settings.json` の `OTEL_RESOURCE_ATTRIBUTES`（`project.name`、`bu.name`、`team.name`）を引き継ぎ、`user.name` を追加した `settings.local.json` を生成する。
+
 > `.claude/settings.local.json` が作成され、`user.name` がテレメトリに含まれるようになる。
 > `.zshrc` への設定は不要。テレメトリは設定があるリポジトリのセッションだけに限定される。
 >
-> **重要**: このスクリプトを実行しないと、ダッシュボードの「User」フィルターでユーザーを識別できません。必ず各メンバーが実行してください。
+> **重要**: `user.name` には **Grafana にログインするメールアドレス**を入力してください。ダッシュボードの「自分のビュー」リンクは Grafana のログインユーザー（`${__user.login}`）で絞り込むため、`user.name` が Grafana のログインメールと一致していないとフィルターが機能しません。
 
-### 5. ダッシュボードにアクセス
+#### Step 5: 動作確認
+
+Claude Code でテレメトリ対象のリポジトリを開き、何かプロンプトを送信する。数分後にダッシュボードでデータが表示されれば成功。
+
+```bash
+# 対象リポジトリで Claude Code を起動
+cd /path/to/target-repo
+claude
+
+# 適当なプロンプト（例: "このリポジトリの概要を教えて"）を送信
+# → テレメトリが送信される
+```
+
+### 6. ダッシュボードにアクセス
 
 ```
 URL:  https://cc-analyzer.<tailnet>.ts.net
 認証: Google OAuth（許可ドメインのGoogleアカウントでログイン）
 管理者: admin / terraform.tfvars で設定したパスワード
 ```
+
+### トラブルシューティング
+
+| 症状 | 原因と対処 |
+|------|-----------|
+| `ping cc-analyzer` が名前解決できない | Tailscale にログインしていない or MagicDNS が無効。`tailscale status` で確認 |
+| Tailnet に招待が表示されない | 別の Tailnet にログイン中。一度ログアウトしてから再ログインする |
+| macOS で VPN 接続できない | システム設定 > プライバシーとセキュリティ で Tailscale の VPN 構成を許可する |
+| テレメトリがダッシュボードに表示されない | `CLAUDE_CODE_ENABLE_TELEMETRY=1` が設定されているか確認。`setup-member.sh` を実行済みか確認 |
+| Grafana にアクセスできない | Tailscale にログイン済みか確認。URL が `https://cc-analyzer.<tailnet>.ts.net` であることを確認 |
+| Grafana で Google ログインが失敗する | OAuth のリダイレクト URI が正しいか管理者に確認。許可ドメインに自分のドメインが含まれているか確認 |
+| `setup-member.sh` で `.claude/settings.json not found` | 対象リポジトリのルートディレクトリで実行しているか確認。リポジトリに `.claude/settings.json` がコミットされているか確認 |
 
 ## ローカル開発
 

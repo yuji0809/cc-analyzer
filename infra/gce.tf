@@ -38,7 +38,7 @@ resource "google_compute_instance" "dashboard" {
     otel_collector_config       = file("${path.module}/otel-collector-config.yaml")
     grafana_datasources         = file("${path.module}/grafana/provisioning/datasources/datasources.yml")
     grafana_dashboards          = file("${path.module}/grafana/provisioning/dashboards/dashboards.yml")
-    grafana_team_dashboard      = file("${path.module}/grafana/provisioning/dashboards/team-dashboard.json")
+    grafana_team_template       = file("${path.module}/grafana/provisioning/dashboards/team-template.json")
   })
 
   service_account {

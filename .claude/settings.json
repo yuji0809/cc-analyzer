@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/track-turn.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Read",
@@ -7,6 +17,16 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-file-reads.sh",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-mcp-usage.sh",
             "async": true
           }
         ]
@@ -33,6 +53,6 @@
     "OTEL_LOG_TOOL_DETAILS": "1",
     "OTEL_LOG_USER_PROMPTS": "1",
     "OTEL_METRICS_INCLUDE_VERSION": "true",
-    "OTEL_RESOURCE_ATTRIBUTES": "project.name=cc-analyzer"
+    "OTEL_RESOURCE_ATTRIBUTES": "bu.name=enjineer-first,team.name=team-a,project.name=cc-analyzer-test1"
   }
 }

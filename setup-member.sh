@@ -3,7 +3,10 @@
 # Claude Code Team Dashboard - メンバーセットアップスクリプト
 #
 # 対象リポジトリのルートで実行すると、
-# .claude/settings.local.json を作成する。
+# .claude/settings.local.json を作成（または更新）する。
+#
+# settings.json の OTEL_RESOURCE_ATTRIBUTES（project.name, bu.name,
+# team.name）を引き継ぎ、user.name を追加してマージする。
 #
 # 使い方:
 #   cd /path/to/target-repo
@@ -12,25 +15,32 @@
 
 set -euo pipefail
 
-# Check if .claude/settings.json exists (confirms this is a configured repo)
-if [ ! -f ".claude/settings.json" ]; then
-  echo "Error: .claude/settings.json not found in current directory."
-  echo "This script must be run from a repository that has .claude/settings.json configured."
+SHARED_SETTINGS=".claude/settings.json"
+LOCAL_SETTINGS=".claude/settings.local.json"
+
+if [ ! -f "$SHARED_SETTINGS" ]; then
+  echo "Error: $SHARED_SETTINGS not found in current directory."
+  echo "This script must be run from a repository that has $SHARED_SETTINGS configured."
   exit 1
 fi
 
-LOCAL_SETTINGS=".claude/settings.local.json"
+# Read shared OTEL_RESOURCE_ATTRIBUTES from settings.json
+SHARED_ATTRS=$(jq -r '.env.OTEL_RESOURCE_ATTRIBUTES // empty' "$SHARED_SETTINGS")
 
-# Check if already configured
+# Read existing user.name from local settings (if file exists)
+EXISTING_USER=""
 if [ -f "$LOCAL_SETTINGS" ]; then
-  echo "Already configured: $LOCAL_SETTINGS"
-  echo "To reconfigure, delete the file first."
-  exit 0
+  echo "Existing configuration found: $LOCAL_SETTINGS"
+  EXISTING_ATTRS=$(jq -r '.env.OTEL_RESOURCE_ATTRIBUTES // empty' "$LOCAL_SETTINGS")
+  EXISTING_USER=$(echo "$EXISTING_ATTRS" | grep -o 'user\.name=[^,]*' | cut -d= -f2 || true)
+  echo ""
 fi
 
-# Get user name (default to OS username)
-DEFAULT_NAME="${USER:-$(whoami)}"
-read -rp "Enter your display name for the dashboard [$DEFAULT_NAME]: " USER_NAME
+# Get user name (= Grafana login email)
+# "自分のビュー" link uses ${__user.login} (Grafana login email) to filter by user.
+# user.name must match the Grafana login email for the link to work.
+DEFAULT_NAME="${EXISTING_USER:-}"
+read -rp "Enter your Grafana login email (e.g. taro@example.com) [$DEFAULT_NAME]: " USER_NAME
 USER_NAME="${USER_NAME:-$DEFAULT_NAME}"
 
 if [ -z "$USER_NAME" ]; then
@@ -38,22 +48,27 @@ if [ -z "$USER_NAME" ]; then
   exit 1
 fi
 
-# Derive project name from directory
-PROJECT_NAME=$(basename "$(pwd)")
+# Merge: shared attributes + user.name
+NEW_ATTRS="${SHARED_ATTRS},user.name=${USER_NAME}"
 
-# Create .claude/settings.local.json
-cat > "$LOCAL_SETTINGS" << EOF
+# Create or update .claude/settings.local.json (preserve other settings)
+if [ -f "$LOCAL_SETTINGS" ]; then
+  jq --arg attrs "$NEW_ATTRS" '.env.OTEL_RESOURCE_ATTRIBUTES = $attrs' "$LOCAL_SETTINGS" > "${LOCAL_SETTINGS}.tmp"
+  mv "${LOCAL_SETTINGS}.tmp" "$LOCAL_SETTINGS"
+  echo "Updated: $LOCAL_SETTINGS"
+else
+  cat > "$LOCAL_SETTINGS" << EOF
 {
   "env": {
-    "OTEL_RESOURCE_ATTRIBUTES": "user.name=${USER_NAME},project.name=${PROJECT_NAME}"
+    "OTEL_RESOURCE_ATTRIBUTES": "${NEW_ATTRS}"
   }
 }
 EOF
+  echo "Created: $LOCAL_SETTINGS"
+fi
 
-echo "Created: $LOCAL_SETTINGS"
 echo ""
-echo "  user.name:    $USER_NAME"
-echo "  project.name: $PROJECT_NAME"
+echo "  OTEL_RESOURCE_ATTRIBUTES: $NEW_ATTRS"
 echo ""
 
 # Suggest adding to .gitignore if not already there

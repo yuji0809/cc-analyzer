@@ -95,7 +95,7 @@ grep 'endpoint' infra/otel-collector-config.yaml
 grep 'uid:' infra/grafana/provisioning/datasources/datasources.yml
 
 # ダッシュボード JSON の datasource uid 参照
-grep -o '"uid": "[^"]*"' infra/grafana/provisioning/dashboards/team-dashboard.json | sort -u
+grep -o '"uid": "[^"]*"' infra/grafana/provisioning/dashboards/team-template.json | sort -u
 
 # startup.sh で書き出しているファイル
 grep 'cat >' infra/startup.sh

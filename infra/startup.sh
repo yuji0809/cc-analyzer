@@ -104,8 +104,8 @@ cat > "$WORK_DIR/grafana/provisioning/dashboards/dashboards.yml" << 'EOF'
 ${grafana_dashboards}
 EOF
 
-cat > "$WORK_DIR/grafana/provisioning/dashboards/team-dashboard.json" << 'EOF'
-${grafana_team_dashboard}
+cat > "$WORK_DIR/grafana/provisioning/dashboards/team-template.json" << 'EOF'
+${grafana_team_template}
 EOF
 
 # Inject credentials into docker-compose.yml

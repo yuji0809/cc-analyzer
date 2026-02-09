@@ -1,0 +1,1543 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "tags": [
+    "claude-code"
+  ],
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "timepicker": {
+    "refresh_intervals": [
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m"
+    ]
+  },
+  "timezone": "",
+  "title": "チームダッシュボード（テンプレート）",
+  "uid": "cc-team-template",
+  "description": "チーム内の開発活動を詳細に分析するダッシュボード。チームごとにコピーしてカスタマイズ可能。",
+  "links": [
+    {
+      "title": "自分のビュー",
+      "type": "link",
+      "url": "/d/cc-team-template?var-project=All&var-user=${__user.login}",
+      "icon": "user",
+      "targetBlank": false
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Project",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics"
+        },
+        "definition": "label_values(target_info, project_name)",
+        "query": "label_values(target_info, project_name)",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "user",
+        "label": "User",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics"
+        },
+        "definition": "label_values(target_info{project_name=~\"$project\"}, user_name)",
+        "query": "label_values(target_info{project_name=~\"$project\"}, user_name)",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "turn_id",
+        "label": "Turn ID",
+        "description": "デフォルト（*）は最新のアクティビティを全表示。ターン一覧の turn_id をクリックすると、そのターンに絞り込み。",
+        "type": "textbox",
+        "current": {
+          "selected": false,
+          "text": "*",
+          "value": "*"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "title": "概要",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "セッション数",
+      "description": "期間内の合計セッション数",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_session_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "legendFormat": "sessions",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "合計コスト",
+      "description": "API推定コスト",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "legendFormat": "cost",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "合計トークン",
+      "description": "入力 + 出力トークン数",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "legendFormat": "tokens",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "h"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "アクティブ時間",
+      "description": "合計アクティブコーディング時間",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_active_time_seconds_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / 3600",
+          "legendFormat": "hours",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.3
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 5
+      },
+      "id": 40,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "キャッシュ効率",
+      "description": "cacheRead / (input + cacheRead + cacheCreation)。高いほどコスト効率が良い",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{type=\"cacheRead\",user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / (sum(increase(claude_code_token_usage_tokens_total{type=\"input\",user_name=~\"$user\",project_name=~\"$project\"}[$__range])) + sum(increase(claude_code_token_usage_tokens_total{type=\"cacheRead\",user_name=~\"$user\",project_name=~\"$project\"}[$__range])) + sum(increase(claude_code_token_usage_tokens_total{type=\"cacheCreation\",user_name=~\"$user\",project_name=~\"$project\"}[$__range])))",
+          "legendFormat": "cache_rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.7
+              },
+              {
+                "color": "green",
+                "value": 0.9
+              }
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 5
+      },
+      "id": 41,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "Edit/Write 承認率",
+      "description": "コード編集ツールの accept / (accept + reject)。低い場合はプロンプト品質改善のシグナル",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_code_edit_tool_decision_total{decision=\"accept\",user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / sum(increase(claude_code_code_edit_tool_decision_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "legendFormat": "accept_rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "super-light-blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "id": 42,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "title": "セッション単価",
+      "description": "1セッションあたりの平均コスト",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])) / sum(increase(claude_code_session_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "legendFormat": "cost_per_session",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 109,
+      "title": "アクティビティ追跡",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "turn_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "このターンで読まれたファイルを表示",
+                    "url": "/d/cc-team-template?${__url_time_range}&${project:queryparam}&${user:queryparam}&var-turn_id=${__value.raw}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prompt"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "id": 29,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Time",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "enablePagination": true
+        }
+      },
+      "title": "ターン一覧",
+      "description": "ユーザーがプロンプトを送信したタイミングの一覧。turn_id をクリックすると、下のパネルがそのターンで読まれたファイルに自動で絞り込まれる。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:hook.user_turn AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "labels": true,
+              "id": true,
+              "tsNs": true,
+              "Line": true,
+              "detected_level": true,
+              "stream_id": true,
+              "session_id": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "turn_id": 1,
+              "user.name": 2,
+              "prompt": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 30,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "ターン内アクティビティ",
+      "description": "Turn ID で指定したターン内の全アクティビティ（ファイル読み込み、MCP ツール呼び出し等）。Turn ID が空の場合は「No data」と表示される。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "turn_id:${turn_id} NOT event.name:hook.user_turn AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 47,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reads"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "title": ".md ファイル読み込み頻度",
+      "description": "Markdown ファイルのファイル別読み込み回数ランキング。どのドキュメントがよく参照されているかを定量化。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:hook.file_read AND file_extension:\".md\" | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (file_path) count(*) as reads | sort by (reads) desc",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "labels": true,
+              "detected_level": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 48,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "MCP ツールログ",
+      "description": "MCP ツール呼び出しの生ログ。サーバー名・ツール名・成否・所要時間を確認。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:mcp_tool AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 49,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "title": "スラッシュコマンドログ",
+      "description": "スラッシュコマンド（/doc-check 等）の実行ログ。プロンプト内容とユーザー名を確認。",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "event.name:hook.user_turn AND prompt:re(\"^/\") AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 28,
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "title": "MCP ツール利用頻度",
+      "description": "MCP サーバー・ツールごとの利用回数",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:mcp_tool | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | unpack_json from tool_parameters | stats by (mcp_server_name, mcp_tool_name) count(*) as calls | sort by (calls) desc",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "labels": true,
+              "detected_level": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 31,
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "title": "スラッシュコマンド利用頻度",
+      "description": "ユーザーが入力したカスタムスラッシュコマンドの利用回数。ビルトインコマンド（/help, /clear 等）は含まれない。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:hook.user_turn AND prompt:re(\"^/\") | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (prompt) count(*) as calls | sort by (calls) desc",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "labels": true,
+              "detected_level": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "id": 102,
+      "title": "トークン & コスト",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 51
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "タイプ別トークン使用量",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (type) (increase(claude_code_token_usage_tokens_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 51
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "ユーザー別コスト",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (user_name) (increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{user_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 59
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "モデル別コスト",
+      "description": "使用モデル（Opus/Sonnet/Haiku等）ごとの推定APIコスト",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (model) (increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.3
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 59
+      },
+      "id": 43,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "title": "キャッシュ効率推移",
+      "description": "cacheRead / (input + cacheRead + cacheCreation) の時系列。CLAUDE.md 変更やプロジェクト切替の影響を追跡",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(increase(claude_code_token_usage_tokens_total{type=\"cacheRead\",user_name=~\"$user\",project_name=~\"$project\"}[$__interval])) / (sum(increase(claude_code_token_usage_tokens_total{type=\"input\",user_name=~\"$user\",project_name=~\"$project\"}[$__interval])) + sum(increase(claude_code_token_usage_tokens_total{type=\"cacheRead\",user_name=~\"$user\",project_name=~\"$project\"}[$__interval])) + sum(increase(claude_code_token_usage_tokens_total{type=\"cacheCreation\",user_name=~\"$user\",project_name=~\"$project\"}[$__interval])))",
+          "legendFormat": "キャッシュ効率",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 67
+      },
+      "id": 103,
+      "title": "コード変更",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 68
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "コード変更行数（追加 / 削除）",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (type) (increase(claude_code_lines_of_code_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 68
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "ユーザー別コミット & PR",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (user_name) (increase(claude_code_commit_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{user_name}} commits",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (user_name) (increase(claude_code_pull_request_count_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{user_name}} PRs",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 76
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "Edit/Write 承認 vs 却下",
+      "description": "コード編集ツールの判断（承認/却下）をツール別に表示",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (tool, decision) (increase(claude_code_code_edit_tool_decision_total{user_name=~\"$user\",project_name=~\"$project\"}[$__interval]))",
+          "legendFormat": "{{tool}} {{decision}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 76
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "title": "言語別 Edit/Write 判断",
+      "description": "プログラミング言語別のコード編集判断",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (language) (increase(claude_code_code_edit_tool_decision_total{user_name=~\"$user\",project_name=~\"$project\",decision=\"accept\"}[$__interval]))",
+          "legendFormat": "{{language}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 84
+      },
+      "id": 110,
+      "title": "ツール & API",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "victorialogs"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 85
+          },
+          "id": 21,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "title": "API リクエストログ",
+          "description": "各APIリクエストの詳細。model, cost_usd, duration_ms, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens を確認可能。",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "event.name:api_request AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "victorialogs"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 95
+          },
+          "id": 22,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "title": "API エラーログ",
+          "description": "APIエラーの一覧。status_code（429=レート制限, 500=サーバーエラー等）, error内容, attempt（リトライ回数）を確認可能。",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "event.name:api_error AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "victorialogs"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 95
+          },
+          "id": 44,
+          "options": {
+            "showHeader": true,
+            "footer": {
+              "show": false
+            }
+          },
+          "title": "API エラーパターン",
+          "description": "ステータスコード・モデル別のエラー集計。429（レート制限）の頻度を一目で把握。",
+          "type": "table",
+          "targets": [
+            {
+              "expr": "event.name:api_error | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (status_code, model) count(*) as errors | sort by (errors) desc",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "labels",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Line": true,
+                  "labels": true,
+                  "detected_level": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "victorialogs"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 105
+          },
+          "id": 23,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "title": "ツール失敗ログ",
+          "description": "失敗したツール実行のみを抽出。error フィールドでエラーパターンを把握。",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "event.name:tool_result AND success:\"false\" AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "victorialogs"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 105
+          },
+          "id": 24,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "title": "Bash コマンドログ",
+          "description": "Bash ツールで実行されたコマンドの一覧。tool_parameters に bash_command, full_command, description, sandbox が含まれる。",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "event.name:tool_result AND tool_name:Bash AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\")",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 85
+      },
+      "id": 111,
+      "title": "利用パターン分析",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "runs" },
+            "properties": [{ "id": "custom.width", "value": 70 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "user.name" },
+            "properties": [{ "id": "custom.width", "value": 150 }]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 86
+      },
+      "id": 50,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "runs", "desc": true }],
+        "footer": {
+          "show": false,
+          "enablePagination": true
+        }
+      },
+      "title": "Bash 許可候補",
+      "description": "頻繁に実行される Bash コマンド一覧。runs が多い＝毎回手動承認しているコマンド。\n\n【アクション】\n「allowedTools パターン」列の値を使って .claude/settings.json に追加すると自動承認になる:\n  \"allowedTools\": [\"Bash(値:*)\"]\n\n例: allowedTools パターンが \"Run unit tests\" の場合:\n  \"allowedTools\": [\"Bash(Run unit tests:*)\"]",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:tool_result AND tool_name:Bash | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | unpack_json from tool_parameters | stats by (bash_command, description, \"user.name\") count(*) as runs | sort by (runs) desc",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "labels": true,
+              "detected_level": true
+            },
+            "indexByName": {
+              "user.name": 0,
+              "bash_command": 1,
+              "description": 2,
+              "runs": 3
+            },
+            "renameByName": {
+              "description": "allowedTools パターン",
+              "bash_command": "実行コマンド",
+              "runs": "回数",
+              "user.name": "ユーザー"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

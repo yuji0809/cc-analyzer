@@ -33,7 +33,9 @@ output "claude_settings_json" {
         "OTEL_EXPORTER_OTLP_ENDPOINT": "http://cc-analyzer:4317",
         "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
         "OTEL_LOG_TOOL_DETAILS": "1",
-        "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
+        "OTEL_LOG_USER_PROMPTS": "1",
+        "OTEL_METRICS_INCLUDE_VERSION": "true",
+        "OTEL_RESOURCE_ATTRIBUTES": "bu.name=BU_NAME,team.name=TEAM_NAME,project.name=REPO_NAME"
       }
     }
 

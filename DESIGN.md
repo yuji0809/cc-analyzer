@@ -484,19 +484,22 @@ terraform.tfvars → Terraform → Secret Manager (暗号化 + IAM 制御)
     "OTEL_EXPORTER_OTLP_ENDPOINT": "http://cc-analyzer:4317",
     "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
     "OTEL_LOG_TOOL_DETAILS": "1",
-    "OTEL_RESOURCE_ATTRIBUTES": "project.name=REPO_NAME"
+    "OTEL_LOG_USER_PROMPTS": "1",
+    "OTEL_METRICS_INCLUDE_VERSION": "true",
+    "OTEL_RESOURCE_ATTRIBUTES": "bu.name=BU_NAME,team.name=TEAM_NAME,project.name=REPO_NAME"
   }
 }
 ```
 
 #### 個人設定（`.claude/settings.local.json`、`.gitignore` に追加）
 
-各メンバーは `.claude/settings.local.json` を作成し、`user.name` を追加する:
+各メンバーは `.claude/settings.local.json` を作成し、`user.name` を追加する。
+`user.name` には **Grafana にログインするメールアドレス**を指定する。ダッシュボードの「自分のビュー」リンクが Grafana のログインユーザー（`${__user.login}`）でフィルターするため、一致している必要がある:
 
 ```json
 {
   "env": {
-    "OTEL_RESOURCE_ATTRIBUTES": "user.name=YOUR_NAME,project.name=REPO_NAME"
+    "OTEL_RESOURCE_ATTRIBUTES": "user.name=taro@example.com,project.name=REPO_NAME"
   }
 }
 ```
@@ -595,8 +598,9 @@ infra/
           ├── datasources/
           │   └── datasources.yml    # VictoriaMetrics/Logsを自動登録
           └── dashboards/
-              ├── dashboards.yml     # ダッシュボードプロビジョニング設定
-              └── team-dashboard.json # ダッシュボードJSON（Gitで管理）
+              ├── dashboards.yml      # ダッシュボードプロビジョニング設定
+              ├── overview.json       # 組織横断ダッシュボード（管理者向け）
+              └── team-template.json  # チームダッシュボード（テンプレート）
 ```
 
 > **Note:** Tailscale VPN の採用により `firewall.tf` は不要（5.4 節参照）。
@@ -636,12 +640,17 @@ cc-analyzer/
   │           │   └── datasources.yml
   │           └── dashboards/
   │               ├── dashboards.yml
-  │               └── team-dashboard.json
+  │               ├── overview.json       ← 組織横断ダッシュボード
+  │               └── team-template.json  ← チームダッシュボード
   └── .claude/
       ├── settings.json                # Claude Code テレメトリ設定（共有）
       ├── settings.local.json          # 個人設定（.gitignore）
       ├── agents/
       │   └── documentation-agent.md   # ドキュメント整合性チェック用エージェント
+      ├── hooks/
+      │   ├── log-file-reads.sh        # PreToolUse Read hook（ファイル読み込み追跡）
+      │   ├── log-mcp-usage.sh         # PreToolUse MCP hook（MCPツール呼び出し追跡）
+      │   └── track-turn.sh            # UserPromptSubmit hook（ターンID生成）
       ├── commands/
       │   ├── doc-check.md             # /doc-check コマンド定義
       │   └── tf-check.md              # /tf-check コマンド定義

@@ -73,7 +73,7 @@ infra/outputs.tf (URL出力)
 ```
 infra/grafana/provisioning/datasources/datasources.yml (uid)
   ↕ 同期
-infra/grafana/provisioning/dashboards/team-dashboard.json (datasource uid 参照)
+infra/grafana/provisioning/dashboards/team-template.json (datasource uid 参照)
 
 infra/grafana/provisioning/dashboards/ 内の全ファイル
   ↕ 同期
