@@ -599,7 +599,6 @@ infra/
           │   └── datasources.yml    # VictoriaMetrics/Logsを自動登録
           └── dashboards/
               ├── dashboards.yml      # ダッシュボードプロビジョニング設定
-              ├── overview.json       # 組織横断ダッシュボード（管理者向け）
               └── team-template.json  # チームダッシュボード（テンプレート）
 ```
 
@@ -640,7 +639,6 @@ cc-analyzer/
   │           │   └── datasources.yml
   │           └── dashboards/
   │               ├── dashboards.yml
-  │               ├── overview.json       ← 組織横断ダッシュボード
   │               └── team-template.json  ← チームダッシュボード
   └── .claude/
       ├── settings.json                # Claude Code テレメトリ設定（共有）
