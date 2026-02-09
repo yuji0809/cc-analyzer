@@ -38,6 +38,7 @@ resource "google_compute_instance" "dashboard" {
     otel_collector_config       = file("${path.module}/otel-collector-config.yaml")
     grafana_datasources         = file("${path.module}/grafana/provisioning/datasources/datasources.yml")
     grafana_dashboards          = file("${path.module}/grafana/provisioning/dashboards/dashboards.yml")
+    instance_name               = var.instance_name
     grafana_team_template       = file("${path.module}/grafana/provisioning/dashboards/team-template.json")
   })
 

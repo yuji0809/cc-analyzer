@@ -27,6 +27,12 @@ TURN_ID="${SHORT_SID}_$(date +%s)"
 mkdir -p /tmp/claude-turn
 echo "$TURN_ID" > "/tmp/claude-turn/${SESSION_ID}.turn_id"
 
+# OTEL エンドポイントからホスト名を導出（例: http://my-host:4317 → my-host）
+OTEL_HOST=$(echo "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" | sed 's|.*://||;s|:.*||')
+if [ -z "$OTEL_HOST" ]; then
+  exit 0
+fi
+
 # OTEL_RESOURCE_ATTRIBUTES から属性を抽出
 USER_NAME=$(echo "${OTEL_RESOURCE_ATTRIBUTES:-}" | grep -o 'user\.name=[^,]*' | cut -d= -f2)
 PROJECT_NAME=$(echo "${OTEL_RESOURCE_ATTRIBUTES:-}" | grep -o 'project\.name=[^,]*' | cut -d= -f2)
@@ -63,6 +69,6 @@ JSON_PAYLOAD=$(jq -cn \
 curl -s --max-time 2 -X POST \
   -H "Content-Type: application/stream+json" \
   --data-binary "$JSON_PAYLOAD" \
-  'http://cc-analyzer:9428/insert/jsonline' 2>/dev/null &
+  "http://${OTEL_HOST}:9428/insert/jsonline" 2>/dev/null &
 
 exit 0

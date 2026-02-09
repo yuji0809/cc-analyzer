@@ -68,7 +68,7 @@ fi
 
 if ! tailscale status &>/dev/null; then
   echo ">>> Starting Tailscale..."
-  tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname=cc-analyzer
+  tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname=${instance_name}
 fi
 
 # Get Tailscale FQDN (e.g. cc-analyzer.tail12345.ts.net)
