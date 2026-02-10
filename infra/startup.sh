@@ -53,9 +53,9 @@ fetch_secret() {
     | jq -r '.payload.data' | base64 -d
 }
 
-GRAFANA_ADMIN_PASSWORD=$(fetch_secret "cc-analyzer-grafana-admin-password")
-TAILSCALE_AUTH_KEY=$(fetch_secret "cc-analyzer-tailscale-auth-key")
-GOOGLE_OAUTH_CLIENT_SECRET=$(fetch_secret "cc-analyzer-google-oauth-client-secret")
+GRAFANA_ADMIN_PASSWORD=$(fetch_secret "${instance_name}-grafana-admin-password")
+TAILSCALE_AUTH_KEY=$(fetch_secret "${instance_name}-tailscale-auth-key")
+GOOGLE_OAUTH_CLIENT_SECRET=$(fetch_secret "${instance_name}-google-oauth-client-secret")
 echo ">>> Secrets fetched successfully"
 
 # ============================================================
