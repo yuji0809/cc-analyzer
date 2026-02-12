@@ -41,6 +41,12 @@ TEAM_NAME=$(echo "${OTEL_RESOURCE_ATTRIBUTES:-}" | grep -o 'team\.name=[^,]*' | 
 
 TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
+# スラッシュコマンドの抽出（例: "/hogehoge 引数" → "hogehoge"）
+SLASH_COMMAND=""
+if echo "$PROMPT" | grep -qE '^\s*/[a-zA-Z]'; then
+  SLASH_COMMAND=$(echo "$PROMPT" | sed 's/^[[:space:]]*//' | cut -d' ' -f1 | sed 's|^/||')
+fi
+
 JSON_PAYLOAD=$(jq -cn \
   --arg msg "user_turn: ${PROMPT}" \
   --arg time "$TIMESTAMP" \
@@ -48,6 +54,7 @@ JSON_PAYLOAD=$(jq -cn \
   --arg tid "$TURN_ID" \
   --arg sid "$SESSION_ID" \
   --arg prompt "$PROMPT" \
+  --arg slash "$SLASH_COMMAND" \
   --arg user "$USER_NAME" \
   --arg proj "$PROJECT_NAME" \
   --arg bu "$BU_NAME" \
@@ -59,6 +66,7 @@ JSON_PAYLOAD=$(jq -cn \
     "turn_id": $tid,
     "session_id": $sid,
     "prompt": $prompt,
+    "slash_command": $slash,
     "user.name": $user,
     "project.name": $proj,
     "bu.name": $bu,
