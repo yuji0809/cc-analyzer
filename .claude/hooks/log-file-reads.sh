@@ -14,6 +14,11 @@ fi
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
+# 絶対パスをプロジェクト相対パスに変換（例: /Users/xxx/repo/docs/A.md → docs/A.md）
+if [ -n "$CWD" ]; then
+  FILE_PATH="${FILE_PATH#"${CWD}/"}"
+fi
+
 # OTEL エンドポイントからホスト名を導出（例: http://my-host:4317 → my-host）
 OTEL_HOST=$(echo "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" | sed 's|.*://||;s|:.*||')
 if [ -z "$OTEL_HOST" ]; then

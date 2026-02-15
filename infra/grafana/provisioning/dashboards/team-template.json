@@ -638,6 +638,24 @@
                 "value": 70
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "turn_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "このターンのアクティビティを表示",
+                    "url": "/d/cc-team-template?${__url_time_range}&${project:queryparam}&${user:queryparam}&var-turn_id=${__value.raw}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -648,11 +666,11 @@
         }
       },
       "title": ".md ファイル読み込み頻度",
-      "description": "Markdown ファイルのファイル別読み込み回数ランキング。どのドキュメントがよく参照されているかを定量化。",
+      "description": "Markdown ファイルのファイル別・ターン別読み込み回数。turn_id をクリックすると、そのターンのアクティビティに絞り込み。",
       "type": "table",
       "targets": [
         {
-          "expr": "event.name:hook.file_read AND file_extension:\".md\" | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (file_path) count(*) as reads | sort by (reads) desc",
+          "expr": "event.name:hook.file_read AND file_extension:\".md\" | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (file_path, turn_id) count(*) as reads | sort by (reads) desc",
           "refId": "A"
         }
       ],
@@ -673,6 +691,11 @@
               "Line": true,
               "labels": true,
               "detected_level": true
+            },
+            "indexByName": {
+              "turn_id": 0,
+              "file_path": 1,
+              "reads": 2
             }
           }
         }
@@ -687,7 +710,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 44
       },
       "id": 48,
       "options": {
@@ -716,7 +739,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 44
       },
       "id": 49,
       "options": {
@@ -745,7 +768,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 54
       },
       "id": 28,
       "options": {
@@ -794,7 +817,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 54
       },
       "id": 31,
       "options": {
@@ -808,7 +831,7 @@
       "type": "table",
       "targets": [
         {
-          "expr": "event.name:hook.user_turn AND prompt:re(\"^/\") | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (prompt) count(*) as calls | sort by (calls) desc",
+          "expr": "event.name:hook.user_turn AND slash_command:re(\".+\") | filter \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | stats by (slash_command) count(*) as calls | sort by (calls) desc",
           "refId": "A"
         }
       ],
@@ -840,7 +863,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 64
       },
       "id": 102,
       "title": "トークン & コスト",
@@ -870,7 +893,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 65
       },
       "id": 7,
       "options": {
@@ -919,7 +942,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 65
       },
       "id": 8,
       "options": {
@@ -968,7 +991,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 59
+        "y": 73
       },
       "id": 20,
       "options": {
@@ -1034,7 +1057,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 59
+        "y": 73
       },
       "id": 43,
       "options": {
@@ -1063,7 +1086,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 81
       },
       "id": 103,
       "title": "コード変更",
@@ -1093,7 +1116,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 68
+        "y": 82
       },
       "id": 9,
       "options": {
@@ -1142,7 +1165,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 68
+        "y": 82
       },
       "id": 10,
       "options": {
@@ -1196,7 +1219,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 76
+        "y": 90
       },
       "id": 14,
       "options": {
@@ -1246,7 +1269,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 76
+        "y": 90
       },
       "id": 15,
       "options": {
@@ -1278,7 +1301,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 98
       },
       "id": 110,
       "title": "ツール & API",
@@ -1293,7 +1316,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 85
+            "y": 99
           },
           "id": 21,
           "options": {
@@ -1322,7 +1345,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 109
           },
           "id": 22,
           "options": {
@@ -1351,7 +1374,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 109
           },
           "id": 44,
           "options": {
@@ -1457,7 +1480,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 99
       },
       "id": 111,
       "title": "利用パターン分析",
@@ -1472,12 +1495,28 @@
         "defaults": {},
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "runs" },
-            "properties": [{ "id": "custom.width", "value": 70 }]
+            "matcher": {
+              "id": "byName",
+              "options": "runs"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "user.name" },
-            "properties": [{ "id": "custom.width", "value": 150 }]
+            "matcher": {
+              "id": "byName",
+              "options": "user.name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
           }
         ]
       },
@@ -1485,12 +1524,17 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 100
       },
       "id": 50,
       "options": {
         "showHeader": true,
-        "sortBy": [{ "displayName": "runs", "desc": true }],
+        "sortBy": [
+          {
+            "displayName": "runs",
+            "desc": true
+          }
+        ],
         "footer": {
           "show": false,
           "enablePagination": true
@@ -1536,6 +1580,294 @@
               "user.name": "ユーザー"
             }
           }
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 110
+      },
+      "id": 112,
+      "title": "トークン消費分析",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "victorialogs"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "プロンプト"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 450
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "コスト (USD)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 60,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "開始時刻",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false,
+          "enablePagination": true
+        }
+      },
+      "title": "ターン別トークン消費",
+      "description": "1ターン（ユーザーの1プロンプト → Claude の応答完了）ごとのトークン消費量。Claude の返答完了後に自動集計されます。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "event.name:hook.turn_complete AND turn_start:* AND \"user.name\":re(\"${user}\") AND \"project.name\":re(\"${project}\") | sort by (_time) desc | limit 200",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "format": "json",
+            "replace": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "labels": true,
+              "detected_level": true,
+              "_msg": true,
+              "_time": true,
+              "event.name": true,
+              "turn_id": true,
+              "bu.name": true,
+              "team.name": true,
+              "project.name": true,
+              "cache_read_tokens": true,
+              "_stream": true,
+              "_stream_id": true,
+              "id": true
+            },
+            "indexByName": {
+              "turn_start": 0,
+              "user.name": 1,
+              "prompt": 2,
+              "input_tokens": 3,
+              "output_tokens": 4,
+              "api_calls": 5,
+              "cost_usd": 6,
+              "session_id": 7,
+              "Time": 8
+            },
+            "renameByName": {
+              "turn_start": "開始時刻",
+              "user.name": "ユーザー",
+              "prompt": "プロンプト",
+              "input_tokens": "入力トークン",
+              "output_tokens": "出力トークン",
+              "api_calls": "API呼出回数",
+              "cost_usd": "コスト (USD)",
+              "session_id": "セッション ID",
+              "Time": "記録時刻"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "コスト (USD)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 111
+      },
+      "id": 61,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "合計トークン",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": false,
+          "enablePagination": true
+        }
+      },
+      "title": "ユーザー別トークン消費サマリー",
+      "description": "ユーザーごとの合計トークン消費量と API コスト。チーム内の利用状況比較に活用。",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "sort_desc(sum by (user_name) (increase(claude_code_token_usage_tokens_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])))",
+          "legendFormat": "",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "sort_desc(sum by (user_name) (increase(claude_code_cost_usage_USD_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range])))",
+          "legendFormat": "",
+          "refId": "B",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "user_name": "ユーザー",
+              "Value #A": "合計トークン",
+              "Value #B": "コスト (USD)"
+            },
+            "indexByName": {
+              "user_name": 0,
+              "Value #A": 1,
+              "Value #B": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 111
+      },
+      "id": 62,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "pieType": "pie",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      },
+      "title": "モデル別トークン消費割合",
+      "description": "どのモデル（Opus / Sonnet / Haiku 等）がトークンを多く消費しているかの割合。",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "sum by (model) (increase(claude_code_token_usage_tokens_total{user_name=~\"$user\",project_name=~\"$project\"}[$__range]))",
+          "legendFormat": "{{model}}",
+          "refId": "A",
+          "instant": true
         }
       ]
     }
